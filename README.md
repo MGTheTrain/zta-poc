@@ -1,6 +1,32 @@
 # Zero Trust Architecture PoC
 
+![Status](https://img.shields.io/badge/status-WIP-yellow)
+
 Zero Trust implementation demonstrating JWT authentication, policy-based authorization and sidecar pattern across Go, Python and C# services using Envoy, Keycloak and OPA.
+
+## TODO
+
+### Kubernetes + Service Mesh
+- [ ] **Kind devcontainer setup** - Local Kubernetes environment with Kind cluster
+- [ ] **Istio integration** - Replace manual Envoy sidecars with Istio automatic injection
+- [ ] **EnvoyFilter CRDs** - Convert Envoy configs to Kubernetes-native resources
+- [ ] **mTLS between services** - Service-to-service encryption
+- [ ] **Istio + OPA integration** - Deploy OPA as EnvoyFilter extension
+
+### Advanced ABAC Examples
+Current implementation: **RBAC + basic ABAC** (role + path + method)
+
+**Planned enhancements:**
+- [ ] **Time-based access control** - Business hours restrictions
+- [ ] **IP allowlisting** - Corporate network requirements
+- [ ] **Resource-based access (ReBAC)** - Users access only their own resources
+- [ ] **Custom JWT claims** - Department, clearance level, cost center
+- [ ] **Multi-factor requirements** - MFA enforcement for sensitive endpoints
+- [ ] **Rate limiting per user** - Per-user request quotas
+- [ ] **External data sources** - OPA queries to user/location services
+- [ ] **Geofencing** - Location-based access restrictions
+
+**See:** [Advanced ABAC Examples](docs/ABAC-EXAMPLES.md) for implementation details
 
 ## Quick Start
 
@@ -127,12 +153,13 @@ Edit port mappings in `docker-compose.yml`
 ### Standards & Principles
 - [NCSC Zero Trust Principles](https://www.ncsc.gov.uk/collection/zero-trust-architecture) - Practical implementation guide
 - [NIST SP 800-207](https://csrc.nist.gov/publications/detail/sp/800-207/final) - Zero Trust Architecture standard
-- [Zero Trust Architecture Design Principles (GitHub Repository)](https://github.com/ukncsc/zero-trust-architecture) – Source repository containing the NCSC’s Zero Trust principles, documentation and diagrams.
+- [Zero Trust Architecture Design Principles (GitHub Repository)](https://github.com/ukncsc/zero-trust-architecture) – Source repository containing the NCSC’s Zero Trust principles, documentation and diagrams
 - [MAPPING-TO-PRINCIPLES.md](docs/MAPPING-TO-PRINCIPLES.md) - How this PoC implements NCSC principles
 
 ### Technical Documentation
 - [Envoy External Authorization](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - [OPA Envoy Plugin](https://www.openpolicyagent.org/docs/latest/envoy-introduction/)
+- [OPA ABAC Examples](https://www.openpolicyagent.org/docs/latest/policy-reference/#http) - Advanced policy patterns
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
 
 ## Production / Kubernetes Considerations
