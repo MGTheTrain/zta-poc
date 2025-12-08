@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # IAM
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.4
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8180
+      KC_HOSTNAME_STRICT: false
+    command: start-dev --health-enabled=true
+    ports:
+      - "8180:8080"
+    networks:
+      - zta-network
+
+  # Policy Engine (OPA)
+  opa:
+    image: openpolicyagent/opa:0.60.0-envoy
+    container_name: opa
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=debug"
+      - "--set=plugins.envoy_ext_authz_grpc.addr=:9191"
+      - "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow"
+      - "--set=decision_logs.console=true"
+      - "/policies"
+    volumes:
+      - ./opa/policies:/policies:ro
+    ports:
+      - "8181:8181"
+      - "9191:9191"
+    networks:
+      - zta-network
+
+  # Service 1: Go Service (with Envoy sidecar)
+  go-service:
+    build:
+      context: ./services/go-service
+      dockerfile: Dockerfile
+    container_name: go-service
+    environment:
+      SERVICE_NAME: go-service
+      SERVICE_PORT: 8080
+    networks:
+      - zta-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  go-service-envoy:
+    image: envoyproxy/envoy:v1.29.1
+    container_name: go-service-envoy
+    volumes:
+      - ./envoy/go-service-envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "9001:8000"  # External port
+    networks:
+      - zta-network
+    depends_on:
+      - go-service
+      - opa
+      - keycloak
+
+  # Service 2: Python Service (with Envoy sidecar)
+  python-service:
+    build:
+      context: ./services/python-service
+      dockerfile: Dockerfile
+    container_name: python-service
+    environment:
+      SERVICE_NAME: python-service
+      SERVICE_PORT: 8080
+    networks:
+      - zta-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  python-service-envoy:
+    image: envoyproxy/envoy:v1.29.1
+    container_name: python-service-envoy
+    volumes:
+      - ./envoy/python-service-envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "9002:8000"
+    networks:
+      - zta-network
+    depends_on:
+      - python-service
+      - opa
+      - keycloak
+
+  # Service 3: C# Service (with Envoy sidecar)
+  csharp-service:
+    build:
+      context: ./services/csharp-service
+      dockerfile: Dockerfile
+    container_name: csharp-service
+    environment:
+      SERVICE_NAME: csharp-service
+      ASPNETCORE_URLS: http://+:8080
+    networks:
+      - zta-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  csharp-service-envoy:
+    image: envoyproxy/envoy:v1.29.1
+    container_name: csharp-service-envoy
+    volumes:
+      - ./envoy/csharp-service-envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "9003:8000"
+    networks:
+      - zta-network
+    depends_on:
+      - csharp-service
+      - opa
+      - keycloak
+
+networks:
+  zta-network:
+    driver: bridge
