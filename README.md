@@ -124,10 +124,16 @@ Edit port mappings in `docker-compose.yml`
 
 ## Resources
 
+### Standards & Principles
+- [NCSC Zero Trust Principles](https://www.ncsc.gov.uk/collection/zero-trust-architecture) - Practical implementation guide
+- [NIST SP 800-207](https://csrc.nist.gov/publications/detail/sp/800-207/final) - Zero Trust Architecture standard
+- [Zero Trust Architecture Design Principles (GitHub Repository)](https://github.com/ukncsc/zero-trust-architecture) – Source repository containing the NCSC’s Zero Trust principles, documentation and diagrams.
+- [MAPPING-TO-PRINCIPLES.md](docs/MAPPING-TO-PRINCIPLES.md) - How this PoC implements NCSC principles
+
+### Technical Documentation
 - [Envoy External Authorization](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - [OPA Envoy Plugin](https://www.openpolicyagent.org/docs/latest/envoy-introduction/)
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
-- [NIST Zero Trust Architecture](https://csrc.nist.gov/publications/detail/sp/800-207/final)
 
 ## Production / Kubernetes Considerations
 
