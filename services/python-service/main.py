@@ -38,6 +38,17 @@ async def admin_users(request: Request):
         "user": get_user(request)
     }
 
+# ReBAC: Resource-based access control
+# Pattern: /users/{user_id}/profile or /users/{user_id}/data
+@app.get("/users/{user_id}/{resource}")
+async def user_resource(user_id: str, resource: str, request: Request):
+    return {
+        "service": SERVICE_NAME,
+        "message": f"Resource-based access: user {user_id}'s {resource} (OPA validates ownership)",
+        "timestamp": datetime.now().isoformat(),
+        "user": user_id
+    }
+
 def get_user(request: Request):
     auth = request.headers.get("authorization", "")
     return "authenticated-user" if auth else "anonymous"

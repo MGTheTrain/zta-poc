@@ -44,6 +44,19 @@ app.MapGet("/admin/users", (HttpContext context) =>
     });
 });
 
+// ReBAC: Resource-based access control
+// Pattern: /users/{user_id}/profile or /users/{user_id}/data
+app.MapGet("/users/{userId}/{resource}", (string userId, string resource, HttpContext context) =>
+{
+    return Results.Json(new
+    {
+        service = serviceName,
+        message = $"Resource-based access: user {userId}'s {resource} (OPA validates ownership)",
+        timestamp = DateTime.UtcNow,
+        user = userId
+    });
+});
+
 string GetUser(HttpContext context)
 {
     var auth = context.Request.Headers["Authorization"].ToString();

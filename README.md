@@ -2,55 +2,47 @@
 
 ![Status](https://img.shields.io/badge/status-WIP-yellow)
 
-Zero Trust implementation demonstrating JWT authentication, policy-based authorization and sidecar pattern across Go, Python and C# services using Envoy, Keycloak and OPA.
+Zero Trust implementation demonstrating JWT authentication, policy-based authorization, and sidecar pattern across Go, Python and C# services using Envoy, Keycloak and OPA.
 
 ## TODO
 
 ### Kubernetes + Service Mesh
-- [ ] **Kind devcontainer setup** - Local Kubernetes environment with Kind cluster
-- [ ] **Istio integration** - Replace manual Envoy sidecars with Istio automatic injection
-- [ ] **EnvoyFilter CRDs** - Convert Envoy configs to Kubernetes-native resources
-- [ ] **mTLS between services** - Service-to-service encryption
-- [ ] **Istio + OPA integration** - Deploy OPA as EnvoyFilter extension
-
-### Advanced ABAC Examples
-Current implementation: **RBAC + basic ABAC** (role + path + method)
-
-**Planned enhancements:**
-- [ ] **Time-based access control** - Business hours restrictions
-- [ ] **IP allowlisting** - Corporate network requirements
-- [ ] **Resource-based access (ReBAC)** - Users access only their own resources
-- [ ] **Custom JWT claims** - Department, clearance level, cost center
-- [ ] **Multi-factor requirements** - MFA enforcement for sensitive endpoints
-- [ ] **Rate limiting per user** - Per-user request quotas
-- [ ] **External data sources** - OPA queries to user/location services
-- [ ] **Geofencing** - Location-based access restrictions
-
-**See:** [Advanced ABAC Examples](docs/ABAC-EXAMPLES.md) for implementation details
+- [ ] Kind devcontainer setup
+- [ ] Istio integration with automatic sidecar injection
+- [ ] EnvoyFilter CRDs
+- [ ] mTLS between services
+- [ ] Istio + OPA integration
 
 ## Quick Start
 
 ```bash
-# Start everything
+# Start all services (Keycloak auto-configures from realm.json)
 make start
 
-# Configure Keycloak (realm, users, roles)
-make setup-keycloak
+# Load policies
+make use-one      # RBAC only
+make use-three    # RBAC + Simple ReBAC + Time-based
 
-# Generate test traffic and verify authorization
-make test-admin     # ✅ Full access
-make test-user      # ✅ GET only, no /admin/*
-make test-denied    # ✅ No auth = 401
+# Run tests (auto-detects loaded policy set)
+make test         # Integration tests via Envoy
+make test-opa     # Direct OPA policy tests
 
-# Access UIs
-make keycloak       # http://localhost:8180 (admin/admin)
+# View active policies
+make list-policies
 ```
+
+**Access Points:**
+- Keycloak: http://localhost:8180 (admin/admin)
+- Go Service: http://localhost:9001
+- Python Service: http://localhost:9002
+- C# Service: http://localhost:9003
+- OPA: http://localhost:8181
 
 ## What's Included
 
 **Zero Trust Stack:**
-- **Keycloak** (port 8180) - Identity provider & JWT issuer
-- **OPA** (port 8181) - Policy decision point
+- **Keycloak** - Identity provider & JWT issuer (auto-configured)
+- **OPA** - Policy decision point (hot-reloadable policies)
 - **Envoy Sidecars** - JWT validation & authorization per service
 
 **Example Services:**
@@ -65,45 +57,41 @@ make keycloak       # http://localhost:8180 (admin/admin)
 Client → Envoy [JWT Validation → OPA Authorization] → Backend Service
 ```
 
-**Why Zero Trust?**
-- Never trust, always verify
-- Least privilege access control
-- Defense in depth
-- Cloud-native security
+**Test Users:**
+- alice / password (admin role)
+- bob / password (user role)
 
-## Viewing Authorization Decisions
+## Policy Sets
 
-### 1. OPA Decision Logs
+### use-one: RBAC Only
+Simple role-based access control
+
+**Rules:**
+- Admin: Full access
+- User: GET only, no /admin/*, can access own resources
+- Anonymous: /health only
+
+### use-three: RBAC + Simple ReBAC + Time
+Adds resource ownership and time-based restrictions
+
+**Additional Rules:**
+- Users can only access `/users/{their-id}/*`
+- Business hours enforcement (Mon-Fri 9am-5pm UTC)
+- Admins bypass all restrictions
+
+## Test Results
+
 ```bash
-docker logs opa -f | grep "Decision Log"
-# Shows: user, roles, path, allow/deny decision
+make test
 ```
 
-### 2. Test Different Scenarios
+**Expected output:**
+- ✅ Admin (alice): Full access to all endpoints
+- ✅ User (bob): GET only, blocked from /admin/*, can access own resources
+- ✅ Anonymous: 401 except /health
+- ✅ Simple ReBAC: Bob blocked from Alice's resources
 
-**Admin (alice) - Full Access:**
-```bash
-make test-admin
-# ✅ GET/POST/PUT/DELETE all endpoints
-# ✅ Access /admin/* routes
-```
-
-**User (bob) - Read-Only:**
-```bash
-make test-user
-# ✅ GET / and /api/*
-# ❌ POST/PUT/DELETE blocked
-# ❌ /admin/* blocked
-```
-
-**No Authentication:**
-```bash
-make test-denied
-# ❌ All endpoints blocked (401)
-# ✅ /health always accessible
-```
-
-### 3. Authorization Matrix
+## Authorization Matrix
 
 | Endpoint | Admin | User | Anonymous |
 |----------|-------|------|-----------|
@@ -112,60 +100,97 @@ make test-denied
 | `GET /api/data` | ✅ | ✅ | ❌ |
 | `POST /api/data` | ✅ | ❌ | ❌ |
 | `GET /admin/users` | ✅ | ❌ | ❌ |
+| `GET /users/{bob-id}/profile` | ✅ | ✅ (own) | ❌ |
+| `GET /users/{alice-id}/profile` | ✅ | ❌ | ❌ |
 
-## Development
+## Available Commands
 
-**Available Commands:**
 ```bash
 Usage: make [target]
 
 Available targets:
   help            Show this help
+  use-one         Use basic RBAC policies
+  use-three       Use RBAC + ReBAC + Time-based policies
+  list-policies   List current policies
+  build           Rebuild all services
   start           Start all services
   stop            Stop all services
   restart         Restart all services
   logs            Show logs
   clean           Stop and remove everything
-  setup-keycloak  Configure Keycloak (realm, users, roles)
-  test-admin      Test with admin token (should access everything)
-  test-user       Test with regular user (GET only)
-  test-denied     Test denied access scenarios
-  keycloak        Open Keycloak in browser
+  test            Auto-detect policy set and run appropriate tests
+  open-keycloak   Open Keycloak in browser
+  test-opa        Test OPA policies directly (detects use-one/use-three)
 ```
 
 ## Troubleshooting
 
-**No authorization data?**
-1. Check OPA: `docker logs opa --tail 50`
-2. Check Envoy: `docker logs go-service-envoy --tail 50`
-3. Verify tokens: Decode at [jwt.io](https://jwt.io)
+**No policies loaded?**
+```bash
+make use-three  # Load policy set
+make list-policies
+```
+
+**Tests failing?**
+```bash
+docker logs opa --tail 50        # Check OPA
+docker logs keycloak --tail 50   # Check Keycloak
+make clean && make start         # Fresh start
+```
 
 **403 Forbidden?**
-1. Check OPA policy: `cat opa/policies/authz.rego`
-2. View decision logs: `docker logs opa -f | grep Decision`
-3. Verify JWT roles in token payload
+- Check loaded policies: `make list-policies`
+- View OPA decisions: `docker logs opa -f | grep Decision`
+- Verify JWT at [jwt.io](https://jwt.io)
 
 **Port conflicts?**
-Edit port mappings in `docker-compose.yml`
+Edit `docker-compose.yml` port mappings
+
+## Key Features
+
+- **Auto-configuration** - Keycloak realm imported on first start
+- **Hot-reload policies** - Switch policies instantly without restart
+- **Auto-detecting tests** - Single command tests all scenarios
+- **Simple ReBAC support** - Users can only access their own resources
+- **Time-based access** - Business hours enforcement
+- **Zero Trust** - Never trust, always verify
+
+## Advanced ABAC (Future Enhancements)
+
+**Currently Implemented & Tested:** 
+- Time-based access control (business hours)
+- Resource-based access (ReBAC - user ownership)
+- Role-based access control (RBAC)
+
+**Policy Examples Included (requires additional setup):**
+- IP allowlisting - Needs corporate network configuration
+- MFA requirements - Needs Keycloak MFA enrollment
+- Rate limiting - Needs Redis/external service
+- Geofencing - Needs IP geolocation API
+- Custom JWT claims - Needs Keycloak user mappers
+
+**See:** 
+- [Advanced rego policy implementations](opa/advanced/)
+- [Advanced ABAC Examples](docs/ABAC-EXAMPLES.md)
 
 ## Resources
 
 ### Standards & Principles
-- [NCSC Zero Trust Principles](https://www.ncsc.gov.uk/collection/zero-trust-architecture) - Practical implementation guide
-- [NIST SP 800-207](https://csrc.nist.gov/publications/detail/sp/800-207/final) - Zero Trust Architecture standard
-- [Zero Trust Architecture Design Principles (GitHub Repository)](https://github.com/ukncsc/zero-trust-architecture) – Source repository containing the NCSC’s Zero Trust principles, documentation and diagrams
+- [NCSC Zero Trust Principles](https://www.ncsc.gov.uk/collection/zero-trust-architecture)
+- [NIST SP 800-207](https://csrc.nist.gov/publications/detail/sp/800-207/final)
+- [Zero Trust Architecture Design Principles (GitHub)](https://github.com/ukncsc/zero-trust-architecture)
 - [MAPPING-TO-PRINCIPLES.md](docs/MAPPING-TO-PRINCIPLES.md) - How this PoC implements NCSC principles
 
 ### Technical Documentation
 - [Envoy External Authorization](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - [OPA Envoy Plugin](https://www.openpolicyagent.org/docs/latest/envoy-introduction/)
-- [OPA ABAC Examples](https://www.openpolicyagent.org/docs/latest/policy-reference/#http) - Advanced policy patterns
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
 
-## Production / Kubernetes Considerations
+## Production Considerations
 
 This PoC can be migrated to Kubernetes:
 
-- **Local testing:** Use Istio/Linkerd for automatic sidecar injection; convert to Kubernetes manifests.
-- **Cloud/On-prem:** Deploy on managed Kubernetes; use EnvoyFilter CRDs, Styra DAS for policy management.
-- **Best practices:** Enable mTLS between services, use cert-manager for TLS, persistent storage for Keycloak, distributed tracing with OpenTelemetry.
+- **Local testing:** Use Istio/Linkerd for automatic sidecar injection
+- **Cloud deployment:** Use EnvoyFilter CRDs, Styra DAS for policy management
+- **Best practices:** Enable mTLS, use cert-manager, persistent Keycloak storage, OpenTelemetry tracing

@@ -1,10 +1,25 @@
-.PHONY: help start stop restart logs clean setup-keycloak test-admin test-user test-denied keycloak
+.PHONY: help start build stop restart logs clean test open-keycloak use-one use-three list-policies
 
 help: ## Show this help
 	@echo 'Usage: make [target]'
 	@echo ''
 	@echo 'Available targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+use-one: ## Use basic RBAC policies
+	@bash scripts/load-opa-policies.sh rbac
+
+use-three: ## Use RBAC + ReBAC + Time-based policies
+	@bash scripts/load-opa-policies.sh rbac-rebac-time
+
+list-policies: ## List current policies
+	@echo " Policies loaded in OPA:"
+	@curl -s http://localhost:8181/v1/policies | jq -r '.result[].id // "No policies"'
+
+build: ## Rebuild all services
+	@echo " Rebuilding all services..."
+	@docker-compose build --no-cache
+	@echo " Build complete"
 
 start: ## Start all services
 	@echo " Starting Zero Trust Architecture PoC..."
@@ -20,7 +35,6 @@ start: ## Start all services
 	@echo "  C# Service:     http://localhost:9003"
 	@echo "  OPA:            http://localhost:8181"
 	@echo ""
-	@echo " Run 'make setup-keycloak' to configure Keycloak realm and users"
 
 stop: ## Stop all services
 	@docker compose down
@@ -34,23 +48,12 @@ clean: ## Stop and remove everything
 	@docker compose down -v
 	@docker system prune -f
 
-setup-keycloak: ## Configure Keycloak (realm, users, roles)
-	@echo " Configuring Keycloak..."
-	@bash scripts/setup-keycloak.sh
-	@echo " Keycloak configured"
+test: ## Auto-detect policy set and run appropriate tests
+	@bash scripts/test-internal-services.sh
 
-test-admin: ## Test with admin token (should access everything)
-	@echo " Testing with admin user..."
-	@bash scripts/test-access.sh admin
-
-test-user: ## Test with regular user (GET only)
-	@echo " Testing with regular user..."
-	@bash scripts/test-access.sh user
-
-test-denied: ## Test denied access scenarios
-	@echo " Testing access denial..."
-	@bash scripts/test-access.sh denied
-
-keycloak: ## Open Keycloak in browser
+open-keycloak: ## Open Keycloak in browser
 	@echo "Opening Keycloak..."
 	@open http://localhost:8180 2>/dev/null || xdg-open http://localhost:8180 2>/dev/null || echo "Open http://localhost:8180 in your browser"
+
+test-opa: ## Test OPA policies directly (detects use-one/use-three)
+	@bash scripts/test-opa-policy.sh
