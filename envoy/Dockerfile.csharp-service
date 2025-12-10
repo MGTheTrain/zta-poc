@@ -1,0 +1,3 @@
+# envoy/Dockerfile.csharp-service
+FROM envoyproxy/envoy:v1.29.1
+COPY csharp-service-envoy.yaml /etc/envoy/envoy.yaml

@@ -1,0 +1,3 @@
+# envoy/Dockerfile.go-service
+FROM envoyproxy/envoy:v1.29.1
+COPY go-service-envoy.yaml /etc/envoy/envoy.yaml
