@@ -1,0 +1,34 @@
+{
+    "name": "ZTA PoC - Kind Cluster",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+    "features": {
+      "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+      "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {},
+      "ghcr.io/devcontainers/features/python:1": {}
+    },
+    "postCreateCommand": "bash .devcontainer/kind/setup.sh",
+    "remoteUser": "root",
+    "privileged": true,
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    "runArgs": ["--network=host"],
+    "forwardPorts": [
+        8180, 8181, 9191,
+        9001, 9002, 9003,
+        80, 443,
+        15021, 15443
+    ],
+    "portsAttributes": {
+        "8180": {"label": "Keycloak"},
+        "8181": {"label": "OPA API"},
+        "9191": {"label": "OPA gRPC (ext_authz)"},
+        "9001": {"label": "Go Service"},
+        "9002": {"label": "Python Service"},
+        "9003": {"label": "C# Service"},
+        "80": {"label": "Istio Gateway HTTP"},
+        "443": {"label": "Istio Gateway HTTPS"},
+        "15021": {"label": "Istio Health Check"},
+        "15443": {"label": "Istio SNI Routing"}
+    }
+}
