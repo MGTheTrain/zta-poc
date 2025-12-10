@@ -29,6 +29,15 @@ async def api_data(request: Request):
         "user": get_user(request)
     }
 
+@app.post("/api/data")
+async def api_data_post(request: Request):
+    return {
+        "service": SERVICE_NAME,
+        "message": "API data POST endpoint - requires admin role",
+        "timestamp": datetime.now().isoformat(),
+        "user": get_user(request)
+    }
+
 @app.get("/admin/users")
 async def admin_users(request: Request):
     return {

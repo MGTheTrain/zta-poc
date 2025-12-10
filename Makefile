@@ -18,7 +18,7 @@ list-policies: ## List current policies
 
 build: ## Rebuild all services
 	@echo " Rebuilding all services..."
-	@docker-compose build --no-cache
+	@docker compose build --no-cache
 	@echo " Build complete"
 
 start: ## Start all services

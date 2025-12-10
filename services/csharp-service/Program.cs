@@ -33,6 +33,17 @@ app.MapGet("/api/data", (HttpContext context) =>
     });
 });
 
+app.MapPost("/api/data", (HttpContext context) =>
+{
+    return Results.Json(new
+    {
+        service = serviceName,
+        message = "API data POST endpoint - requires admin role",
+        timestamp = DateTime.UtcNow,
+        user = GetUser(context)
+    });
+});
+
 app.MapGet("/admin/users", (HttpContext context) =>
 {
     return Results.Json(new

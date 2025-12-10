@@ -38,6 +38,16 @@ test_admin() {
     test_endpoint "$ADMIN_TOKEN" "$GO_SERVICE/api/data" "GET" "200"
     test_endpoint "$ADMIN_TOKEN" "$GO_SERVICE/admin/users" "GET" "200"
     test_endpoint "$ADMIN_TOKEN" "$GO_SERVICE/api/data" "POST" "200"
+
+    test_endpoint "$ADMIN_TOKEN" "$PYTHON_SERVICE/" "GET" "200"
+    test_endpoint "$ADMIN_TOKEN" "$PYTHON_SERVICE/api/data" "GET" "200"
+    test_endpoint "$ADMIN_TOKEN" "$PYTHON_SERVICE/admin/users" "GET" "200"
+    test_endpoint "$ADMIN_TOKEN" "$PYTHON_SERVICE/api/data" "POST" "200"
+
+    test_endpoint "$ADMIN_TOKEN" "$CSHARP_SERVICE/" "GET" "200"
+    test_endpoint "$ADMIN_TOKEN" "$CSHARP_SERVICE/api/data" "GET" "200"
+    test_endpoint "$ADMIN_TOKEN" "$CSHARP_SERVICE/admin/users" "GET" "200"
+    test_endpoint "$ADMIN_TOKEN" "$CSHARP_SERVICE/api/data" "POST" "200"
 }
 
 test_user() {
@@ -48,6 +58,16 @@ test_user() {
     test_endpoint "$USER_TOKEN" "$GO_SERVICE/api/data" "GET" "200"
     test_endpoint "$USER_TOKEN" "$GO_SERVICE/api/data" "POST" "403"
     test_endpoint "$USER_TOKEN" "$GO_SERVICE/admin/users" "GET" "403"
+
+    test_endpoint "$USER_TOKEN" "$PYTHON_SERVICE/" "GET" "200"
+    test_endpoint "$USER_TOKEN" "$PYTHON_SERVICE/api/data" "GET" "200"
+    test_endpoint "$USER_TOKEN" "$PYTHON_SERVICE/api/data" "POST" "403"
+    test_endpoint "$USER_TOKEN" "$PYTHON_SERVICE/admin/users" "GET" "403"
+
+    test_endpoint "$USER_TOKEN" "$CSHARP_SERVICE/" "GET" "200"
+    test_endpoint "$USER_TOKEN" "$CSHARP_SERVICE/api/data" "GET" "200"
+    test_endpoint "$USER_TOKEN" "$CSHARP_SERVICE/api/data" "POST" "403"
+    test_endpoint "$USER_TOKEN" "$CSHARP_SERVICE/admin/users" "GET" "403"
 }
 
 test_rebac() {
@@ -61,6 +81,14 @@ test_rebac() {
     test_endpoint "$BOB_TOKEN" "$GO_SERVICE/users/$BOB_ID/profile" "GET" "200"
     test_endpoint "$BOB_TOKEN" "$GO_SERVICE/users/$ALICE_ID/profile" "GET" "403"
     test_endpoint "$ALICE_TOKEN" "$GO_SERVICE/users/$BOB_ID/profile" "GET" "200"
+
+    test_endpoint "$BOB_TOKEN" "$PYTHON_SERVICE/users/$BOB_ID/profile" "GET" "200"
+    test_endpoint "$BOB_TOKEN" "$PYTHON_SERVICE/users/$ALICE_ID/profile" "GET" "403"
+    test_endpoint "$ALICE_TOKEN" "$PYTHON_SERVICE/users/$BOB_ID/profile" "GET" "200"
+
+    test_endpoint "$BOB_TOKEN" "$CSHARP_SERVICE/users/$BOB_ID/profile" "GET" "200"
+    test_endpoint "$BOB_TOKEN" "$CSHARP_SERVICE/users/$ALICE_ID/profile" "GET" "403"
+    test_endpoint "$ALICE_TOKEN" "$CSHARP_SERVICE/users/$BOB_ID/profile" "GET" "200"
 }
 
 test_denied() {
@@ -68,6 +96,14 @@ test_denied() {
     test_endpoint "" "$GO_SERVICE/" "GET" "401"
     test_endpoint "" "$GO_SERVICE/api/data" "GET" "401"
     test_endpoint "" "$GO_SERVICE/health" "GET" "200"
+
+    test_endpoint "" "$PYTHON_SERVICE/" "GET" "401"
+    test_endpoint "" "$PYTHON_SERVICE/api/data" "GET" "401"
+    test_endpoint "" "$PYTHON_SERVICE/health" "GET" "200"
+
+    test_endpoint "" "$CSHARP_SERVICE/" "GET" "401"
+    test_endpoint "" "$CSHARP_SERVICE/api/data" "GET" "401"
+    test_endpoint "" "$CSHARP_SERVICE/health" "GET" "200"
 }
 
 # Main execution
