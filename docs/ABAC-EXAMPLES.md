@@ -140,38 +140,3 @@ allow {
     count([r | r := data.request_log[_]; r.user == jwt_payload.sub; r.time > time.now_ns() - 3600000000000]) < 100
 }
 ```
-
----
-
-## Envoy's Role in ABAC
-
-Envoy is the **data collector**. It sends all these attributes to OPA:
-
-```yaml
-# In Envoy config, forward additional metadata
-ext_authz:
-  grpc_service:
-    envoy_grpc:
-      cluster_name: opa_cluster
-  metadata_context_namespaces:
-    - envoy.filters.http.jwt_authn  # JWT claims
-  with_request_body:
-    max_request_bytes: 8192  # Include request body
-    allow_partial_message: true
-```
-
----
-
-## Summary
-
-| **Access Control Model** | **Your Current Setup** | **Possible with Envoy + OPA** |
-|--------------------------|------------------------|-------------------------------|
-| RBAC (Role-Based) | ✅ Yes | ✅ Yes |
-| Path-Based | ✅ Yes | ✅ Yes |
-| Method-Based | ✅ Yes | ✅ Yes |
-| ABAC (Attribute-Based) | ⚠️ Basic (path + method) | ✅ **Full support** |
-| ReBAC (Resource-Based) | ❌ No | ✅ Yes (with path parsing) |
-| Time-Based | ❌ No | ✅ Yes |
-| IP-Based | ❌ No | ✅ Yes |
-| External Data | ❌ No | ✅ Yes (via http.send) |
-| Multi-Factor | ❌ No | ✅ Yes (via JWT ACR claim) |
