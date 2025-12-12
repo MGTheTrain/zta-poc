@@ -24,7 +24,6 @@ services:
       - keycloak_postgres
     networks:
       - zta-network
-
   keycloak_postgres:
     image: postgres:16-alpine
     container_name: keycloak_postgres

@@ -2,51 +2,50 @@
 set -e
 
 POLICY_SET=${1:-rbac}
+ENVIRONMENT=${2:-docker}  # docker or k8s
 OPA_URL="http://localhost:8181"
 
-echo "🔄 Loading OPA policies: $POLICY_SET"
+echo "🔄 Loading OPA policies: $POLICY_SET ($ENVIRONMENT)"
+
+echo "🗑️  Cleaning old policies..."
+curl -s -X DELETE "$OPA_URL/v1/policies/policies/authz.rego" 2>/dev/null || true
+curl -s -X DELETE "$OPA_URL/v1/policies/authz" 2>/dev/null || true
+curl -s -X DELETE "$OPA_URL/v1/policies/rbac" 2>/dev/null || true
+curl -s -X DELETE "$OPA_URL/v1/policies/rebac" 2>/dev/null || true
+curl -s -X DELETE "$OPA_URL/v1/policies/time_based" 2>/dev/null || true
+
+# Determine policy directory based on environment
+if [ "$ENVIRONMENT" = "k8s" ]; then
+    POLICY_DIR="opa-k8s"
+else
+    POLICY_DIR="opa"
+fi
 
 case $POLICY_SET in
     rbac|use-one)
-        echo "📋 Loading RBAC-only policies..."
+        echo "📋 Loading RBAC-only policies from $POLICY_DIR/rbac/..."
         curl -s -X PUT "$OPA_URL/v1/policies/authz" \
-            --data-binary @opa/rbac/authz.rego
+            --data-binary @$POLICY_DIR/rbac/authz.rego
         echo "✅ RBAC policy loaded"
         ;;
         
     rbac-rebac-time|use-three)
-        echo "📋 Loading RBAC + ReBAC + Time policies..."
+        echo "📋 Loading RBAC + ReBAC + Time policies from $POLICY_DIR/rbac-rebac-time/..."
         
-        # Upload orchestrator
         curl -s -X PUT "$OPA_URL/v1/policies/authz" \
-            --data-binary @opa/rbac-rebac-time/authz.rego
+            --data-binary @$POLICY_DIR/rbac-rebac-time/authz.rego
         
-        # Upload sub-policies
         for policy in rbac rebac time_based; do
             curl -s -X PUT "$OPA_URL/v1/policies/$policy" \
-                --data-binary @opa/rbac-rebac-time/$policy.rego
+                --data-binary @$POLICY_DIR/rbac-rebac-time/$policy.rego
         done
         
         echo "✅ RBAC + ReBAC + Time policies loaded"
         ;;
         
-    advanced|use-seven)
-        echo "📋 Loading full ABAC policies..."
-        
-        curl -s -X PUT "$OPA_URL/v1/policies/authz" \
-            --data-binary @opa/advanced/authz.rego
-        
-        for policy in rbac rebac time_based ip_allowlist mfa rate_limit geofencing; do
-            curl -s -X PUT "$OPA_URL/v1/policies/$policy" \
-                --data-binary @opa/advanced/$policy.rego
-        done
-        
-        echo "✅ Full ABAC policies loaded"
-        ;;
-        
     *)
         echo "❌ Unknown policy set: $POLICY_SET"
-        echo "Usage: $0 [rbac|rbac-rebac-time|advanced]"
+        echo "Usage: $0 [rbac|rbac-rebac-time] [docker|k8s]"
         exit 1
         ;;
 esac
