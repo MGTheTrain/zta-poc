@@ -119,8 +119,8 @@ make k8s-test      # Kubernetes
 
 **Expected output (RBAC + ReBAC + Time):**
 - ✅ All RBAC rules working
-- ✅ Bob can access `/users/{bob-id}/profile` (200)
-- ✅ Bob blocked from `/users/{alice-id}/profile` (403)
+- ✅ Bob can access `/users/{bob-sub-id}/profile` (200)
+- ✅ Bob blocked from `/users/{alice-sub-id}/profile` (403)
 - ✅ Time-based restrictions working
 - ✅ Admins bypass all restrictions
 
@@ -133,8 +133,8 @@ make k8s-test      # Kubernetes
 | `GET /api/data` | ✅ 200 | ✅ 200 | ❌ 401 |
 | `POST /api/data` | ✅ 200 | ❌ 403 | ❌ 401 |
 | `GET /admin/users` | ✅ 200 | ❌ 403 | ❌ 401 |
-| `GET /users/{bob-id}/profile` | ✅ 200 | ✅ 200 (own) | ❌ 401 |
-| `GET /users/{alice-id}/profile` | ✅ 200 | ❌ 403 | ❌ 401 |
+| `GET /users/{bob-sub-id}/profile` | ✅ 200 | ✅ 200 (own) | ❌ 401 |
+| `GET /users/{alice-sub-id}/profile` | ✅ 200 | ❌ 403 | ❌ 401 |
 
 ## Available Commands
 
@@ -186,7 +186,7 @@ Kubernetes targets:
 - OPA policies loaded via HTTP API
 
 ### Kubernetes
-- **Istio service mesh** with automatic sidecar injection
+- **Istio service mesh** with automatic mTLS (SPIFFE identities)
 - **RequestAuthentication** validates JWT format
 - **AuthorizationPolicy CUSTOM** delegates to OPA via ServiceEntry
 - **ServiceEntry** maps `opa-ext-authz-grpc.local` → `opa.default.svc.cluster.local:9191`
@@ -278,6 +278,7 @@ Edit `docker-compose.yml` port mappings
 - [NIST SP 800-207](https://csrc.nist.gov/publications/detail/sp/800-207/final)
 - [Zero Trust Architecture Design Principles (GitHub)](https://github.com/ukncsc/zero-trust-architecture)
 - [MAPPING-TO-PRINCIPLES.md](docs/MAPPING-TO-PRINCIPLES.md) - How this PoC implements NCSC principles
+- [Service Mesh Selection ADR](docs/adrs/ADR-001-SERVICE-MESH-SELECTION.md)
 
 ### Technical Documentation
 - [Istio External Authorization](https://istio.io/latest/docs/tasks/security/authorization/authz-custom/)
