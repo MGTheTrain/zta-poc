@@ -16,9 +16,9 @@ curl -s -X DELETE "$OPA_URL/v1/policies/time_based" 2>/dev/null || true
 
 # Determine policy directory based on environment
 if [ "$ENVIRONMENT" = "k8s" ]; then
-    POLICY_DIR="opa-k8s"
+    POLICY_DIR="infra/opa-k8s"
 else
-    POLICY_DIR="opa"
+    POLICY_DIR="infra/opa"
 fi
 
 case $POLICY_SET in

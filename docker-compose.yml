@@ -4,7 +4,7 @@ services:
   # IAM
   keycloak:
     build:
-      context: ./keycloak
+      context: ./infra/keycloak
       dockerfile: Dockerfile
     container_name: keycloak
     restart: always
@@ -73,7 +73,7 @@ services:
 
   go-service-envoy:
     build:
-      context: ./envoy
+      context: ./infra/envoy
       dockerfile: Dockerfile.go-service
     container_name: go-service-envoy
     ports:
@@ -104,7 +104,7 @@ services:
 
   python-service-envoy:
     build:
-      context: ./envoy
+      context: ./infra/envoy
       dockerfile: Dockerfile.python-service
     container_name: python-service-envoy
     ports:
@@ -135,7 +135,7 @@ services:
 
   csharp-service-envoy:
     build:
-      context: ./envoy
+      context: ./infra/envoy
       dockerfile: Dockerfile.csharp-service
     container_name: csharp-service-envoy
     ports:
