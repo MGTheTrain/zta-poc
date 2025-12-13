@@ -34,7 +34,7 @@ test-opa: ## [Common] Test OPA policies directly
 
 compose-build: ## [Compose] Rebuild all services
 	@echo "📦 Rebuilding all services..."
-	@docker compose build --no-cache
+	@docker compose build
 	@echo "✅ Build complete"
 
 compose-start: ## [Compose] Start all services
