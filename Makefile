@@ -13,34 +13,30 @@ help: ## Show this help
 	@echo 'Kubernetes targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^k8s-[a-zA-Z_-]+:.*?## \[K8s\]/ {printf "  \033[33m%-18s\033[0m %s\n", $$1, substr($$2, 7)}' $(MAKEFILE_LIST)
 
-# ============================================================================
 # Common Targets (Both Docker Compose and Kubernetes)
-# ============================================================================
 
 list-policies: ## [Common] List current policies
-	@echo "📋 Policies loaded in OPA:"
+	@echo " Policies loaded in OPA:"
 	@curl -s http://localhost:8181/v1/policies | jq -r '.result[].id // "No policies"'
 
 open-keycloak: ## [Common] Open Keycloak in browser
-	@echo "🌐 Opening Keycloak..."
+	@echo " Opening Keycloak..."
 	@open http://localhost:8180 2>/dev/null || xdg-open http://localhost:8180 2>/dev/null || echo "Open http://localhost:8180"
 
 test-opa: ## [Common] Test OPA policies directly
 	@bash scripts/test-opa-policy.sh
 
-# ============================================================================
 # Docker Compose Targets
-# ============================================================================
 
 compose-build: ## [Compose] Rebuild all services
-	@echo "📦 Rebuilding all services..."
+	@echo " Rebuilding all services..."
 	@docker compose build
-	@echo "✅ Build complete"
+	@echo " Build complete"
 
 compose-start: ## [Compose] Start all services
 	@echo " Starting Zero Trust Architecture PoC..."
 	@docker compose up -d
-	@echo "⏳ Waiting for services to be healthy..."
+	@echo " Waiting for services to be healthy..."
 	@sleep 10
 	@echo " Services started"
 	@echo ""
@@ -73,9 +69,7 @@ compose-use-one: ## [Compose] Use basic RBAC policies
 compose-use-three: ## [Compose] Use RBAC + ReBAC + Time-based policies
 	@bash scripts/load-opa-policies.sh rbac-rebac-time docker
 
-# ============================================================================
 # Kubernetes Targets
-# ============================================================================
 
 k8s-deploy: ## [K8s] Deploy services with Istio
 	@bash scripts/deploy-to-kind.sh
