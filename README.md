@@ -310,7 +310,6 @@ This PoC demonstrates production-ready patterns:
   - OPA policy versioning and GitOps
   - OpenTelemetry for observability
   - Resource limits and HPA
-  - Network policies for pod-to-pod security
   - Istio AuthorizationPolicy, Kubernetes Network Policies and RBAC for defense in depth
 
 ### Recommended Architecture
@@ -327,17 +326,3 @@ This PoC demonstrates production-ready patterns:
 │ Backend Service (authenticated & authorized requests)   │
 └─────────────────────────────────────────────────────────┘
 ```
-
-## What Makes This Production-Ready
-
-1. **Official Istio Pattern** - Uses `AuthorizationPolicy CUSTOM` with `ServiceEntry`
-2. **Proper Status Codes** - 401 for authentication failures, 403 for authorization failures
-3. **Multi-Policy Composition** - RBAC + ReBAC + Time checks work together
-4. **Comprehensive Testing** - Automated tests for all scenarios
-5. **Hot-Reload Policies** - Update authorization rules without service restart
-6. **Zero Downtime** - Kubernetes rolling updates supported
-7. **Observability Ready** - OPA decision logs for audit trail
-
-## License
-
-MIT
