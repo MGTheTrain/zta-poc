@@ -74,6 +74,11 @@ Success criteria:
 - Automated tests pass with all policies enabled
 - Audit logs capture kubectl exec attempts
 
+Post-Decision Testing:
+- Network policy tests: `scripts/test-network-policies.sh` (**TODO**)
+- RBAC tests: `scripts/test-rbac-restrictions.sh` (**TODO**)
+- mTLS verification: `scripts/verify-mtls.sh` (**TODO**)
+
 ## Threat Model
 
 ### Attack Vector 1: Network-Level Bypass
@@ -390,11 +395,6 @@ kubectl logs -n kube-system kube-apiserver-* | grep "pods/exec"
 - [Istio Security Best Practices](https://istio.io/latest/docs/ops/best-practices/security/)
 - [Istio PeerAuthentication](https://istio.io/latest/docs/reference/config/security/peer_authentication/)
 - [NIST SP 800-207](https://csrc.nist.gov/publications/detail/sp/800-207/final) - Zero Trust Architecture
-
-**Testing**:
-- Network policy tests: `scripts/test-network-policies.sh` (**TODO**)
-- RBAC tests: `scripts/test-rbac-restrictions.sh` (**TODO**)
-- mTLS verification: `make verify-mtls` (**TODO**)
 
 **Future Enhancements**:
 1. **OPA Gatekeeper**: Admission control for pod security policies

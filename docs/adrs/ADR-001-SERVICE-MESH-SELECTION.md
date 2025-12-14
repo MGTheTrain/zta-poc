@@ -43,11 +43,11 @@ Chosen option: **Istio**, because it provides the most comprehensive ZTA feature
 ### Confirmation
 
 Success criteria met:
-- ✅ Automatic mTLS between services (verified via `istioctl x describe pod`)
-- ✅ OPA integration via AuthorizationPolicy CUSTOM + ServiceEntry
-- ✅ JWT validation via RequestAuthentication
-- ✅ Proper 401/403 HTTP status codes from OPA policies
-- ✅ All test suites passing
+- Automatic mTLS between services
+- OPA integration via AuthorizationPolicy CUSTOM + ServiceEntry
+- JWT validation via RequestAuthentication
+- Proper 401/403 HTTP status codes from OPA policies
+- All test suites passing
 
 ## Pros and Cons of the Options
 
@@ -99,7 +99,6 @@ Success criteria met:
 - **Consul**: ✅ Implements SPIFFE (X.509 SVID, Beta serverless support) - [SPIFFE Overview](https://spiffe.io/docs/latest/spiffe-about/overview/)
 
 **Implementation Details**:
-- Istio 1.24.2 deployed via `istioctl install`
 - OPA delegation via ServiceEntry pattern (not EnvoyFilter)
 - Full deployment in `scripts/deploy-to-kind.sh`
 
