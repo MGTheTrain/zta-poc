@@ -112,17 +112,17 @@ make k8s-test      # Kubernetes
 ```
 
 **Expected output (RBAC only):**
-- ✅ Admin (alice): Full access to all endpoints (200)
-- ✅ User (bob): GET only, blocked from POST/admin (200/403)
-- ✅ Anonymous: 401 Unauthorized (except /health)
-- ✅ Health endpoints: Public (200)
+- Admin (alice): Full access to all endpoints (200)
+- User (bob): GET only, blocked from POST/admin (200/403)
+- Anonymous: 401 Unauthorized (except /health)
+- Health endpoints: Public (200)
 
 **Expected output (RBAC + ReBAC + Time):**
-- ✅ All RBAC rules working
-- ✅ Bob can access `/users/{bob-sub-id}/profile` (200)
-- ✅ Bob blocked from `/users/{alice-sub-id}/profile` (403)
-- ✅ Time-based restrictions working
-- ✅ Admins bypass all restrictions
+- All RBAC rules working
+- Bob can access `/users/{bob-sub-id}/profile` (200)
+- Bob blocked from `/users/{alice-sub-id}/profile` (403)
+- Time-based restrictions working
+- Admins bypass all restrictions
 
 ## Authorization Matrix
 
@@ -254,11 +254,11 @@ Edit `docker-compose.yml` port mappings
 ## Advanced ABAC (Future Enhancements)
 
 **Currently Implemented & Tested:** 
-- ✅ Time-based access control (business hours)
-- ✅ Resource-based access (ReBAC - user ownership)
-- ✅ Role-based access control (RBAC)
-- ✅ Proper HTTP status codes (401/403)
-- ✅ Kubernetes Istio integration
+- Time-based access control (business hours)
+- Resource-based access (ReBAC - user ownership)
+- Role-based access control (RBAC)
+- Proper HTTP status codes (401/403)
+- Kubernetes Istio integration
 
 **Policy Examples Included (requires additional setup):**
 - IP allowlisting - Needs corporate network configuration
@@ -278,7 +278,6 @@ Edit `docker-compose.yml` port mappings
 - [NIST SP 800-207](https://csrc.nist.gov/publications/detail/sp/800-207/final)
 - [Zero Trust Architecture Design Principles (GitHub)](https://github.com/ukncsc/zero-trust-architecture)
 - [MAPPING-TO-PRINCIPLES.md](docs/MAPPING-TO-PRINCIPLES.md) - How this PoC implements NCSC principles
-- [Service Mesh Selection ADR](docs/adrs/ADR-001-SERVICE-MESH-SELECTION.md)
 
 ### Technical Documentation
 - [Istio External Authorization](https://istio.io/latest/docs/tasks/security/authorization/authz-custom/)
@@ -286,17 +285,21 @@ Edit `docker-compose.yml` port mappings
 - [Envoy External Authorization](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_authz_filter)
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
 
+### ADRs
+- [ADR-001: Service Mesh Selection](docs/adrs/ADR-001-SERVICE-MESH-SELECTION.md)
+- [ADR-002: Sidecar Bypass Prevention](docs/adrs/ADR-002-SIDECAR-BYPASS-PREVENTION.md)
+
 ## Production Considerations
 
 This PoC demonstrates production-ready patterns:
 
 ### Docker Compose → Kubernetes Migration
-- ✅ **Completed** - Full Istio + OPA integration
-- ✅ Automatic sidecar injection
-- ✅ ServiceEntry for OPA resolution
-- ✅ RequestAuthentication for JWT validation
-- ✅ AuthorizationPolicy CUSTOM for OPA delegation
-- ✅ Proper HTTP status codes (401/403)
+- **Completed** - Full Istio + OPA integration
+- Automatic sidecar injection
+- ServiceEntry for OPA resolution
+- RequestAuthentication for JWT validation
+- AuthorizationPolicy CUSTOM for OPA delegation
+- Proper HTTP status codes (401/403)
 
 ### Production Deployment
 - **Cloud/On-prem:** Deploy on managed/self-hosted Kubernetes
@@ -308,7 +311,7 @@ This PoC demonstrates production-ready patterns:
   - OpenTelemetry for observability
   - Resource limits and HPA
   - Network policies for pod-to-pod security
-  - Istio AuthorizationPolicy for defense in depth
+  - Istio AuthorizationPolicy, Kubernetes Network Policies and RBAC for defense in depth
 
 ### Recommended Architecture
 ```
