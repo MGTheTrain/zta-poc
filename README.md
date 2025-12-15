@@ -268,7 +268,7 @@ Edit `docker-compose.yml` port mappings
 - Custom JWT claims - Needs Keycloak user mappers
 
 **See:** 
-- [Advanced rego policy implementations](opa/advanced/)
+- [Advanced rego policy implementations](infra/opa/advanced/)
 - [Advanced ABAC Examples](docs/ABAC-EXAMPLES.md)
 
 ## Resources
