@@ -1,5 +1,7 @@
 # Zero Trust Architecture PoC
 
+![Completed](https://img.shields.io/badge/status-completed-006400)
+
 Zero Trust implementation demonstrating JWT authentication, policy-based authorization and service mesh integration across Go, Python and C# services using Istio, OPA and Keycloak.
 
 ## Quick Start
