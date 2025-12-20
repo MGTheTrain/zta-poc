@@ -30,12 +30,12 @@ test-opa: ## [Common] Test OPA policies directly
 
 compose-build: ## [Compose] Rebuild all services
 	@echo " Rebuilding all services..."
-	@docker compose build
+	@docker compose -f infra/docker-compose.yml build
 	@echo " Build complete"
 
 compose-start: ## [Compose] Start all services
 	@echo " Starting Zero Trust Architecture PoC..."
-	@docker compose up -d
+	@docker compose -f infra/docker-compose.yml up -d
 	@echo " Waiting for services to be healthy..."
 	@sleep 10
 	@echo " Services started"
@@ -49,15 +49,15 @@ compose-start: ## [Compose] Start all services
 	@echo ""
 
 compose-stop: ## [Compose] Stop all services
-	@docker compose down
+	@docker compose -f infra/docker-compose.yml down
 
 compose-restart: compose-stop compose-start ## [Compose] Restart all services
 
 compose-logs: ## [Compose] Show logs
-	@docker compose logs -f
+	@docker compose -f infra/docker-compose.yml logs -f
 
 compose-clean: ## [Compose] Stop and remove everything
-	@docker compose down -v
+	@docker compose -f infra/docker-compose.yml down -v
 	@docker system prune -f
 
 compose-test: ## [Compose] Run integration tests

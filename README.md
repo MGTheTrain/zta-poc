@@ -22,6 +22,9 @@ make test-opa     # Direct OPA policy tests
 
 # View active policies
 make list-policies
+
+# Stop services and clear docker resources
+make compose-clean
 ```
 
 ### Kubernetes (Kind)
@@ -42,6 +45,9 @@ make k8s-test
 
 # View active policies
 make list-policies
+
+# Stop services and clear k8s resources
+make k8s-clean 
 ```
 
 **Access Points (Docker Compose):**
@@ -317,14 +323,14 @@ This PoC demonstrates production-ready patterns:
 ### Recommended Architecture
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Production Setup                      │
+│                    Production Setup                     │
 ├─────────────────────────────────────────────────────────┤
 │ Ingress/Gateway (TLS termination)                       │
-│   ↓                                                      │
+│   ↓                                                     │
 │ Istio Gateway (mTLS + JWT validation)                   │
-│   ↓                                                      │
+│   ↓                                                     │
 │ Service Pods [Istio Sidecar + OPA Authorization]        │
-│   ↓                                                      │
+│   ↓                                                     │
 │ Backend Service (authenticated & authorized requests)   │
 └─────────────────────────────────────────────────────────┘
 ```

@@ -37,7 +37,7 @@ make k8s-test
 **Docker Compose:**
 ```bash
 # View all containers
-docker compose ps
+docker compose -f infra/docker-compose.yml ps
 
 # Check specific service logs
 docker logs keycloak --tail 50
@@ -45,7 +45,7 @@ docker logs opa --tail 50
 docker logs go-service-envoy --tail 50
 
 # Follow logs in real-time
-docker compose logs -f
+docker compose -f infra/docker-compose.yml logs -f
 ```
 
 **Kubernetes:**
