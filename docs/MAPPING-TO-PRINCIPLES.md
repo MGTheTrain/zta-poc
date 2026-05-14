@@ -1,360 +1,202 @@
 # NCSC Zero Trust Principles → Implementation Mapping
 
-This PoC demonstrates the [NCSC Zero Trust Architecture Design Principles](https://www.ncsc.gov.uk/collection/zero-trust-architecture) with production-ready implementations in both Docker Compose and Kubernetes/Istio environments.
+This PoC maps the [NCSC Zero Trust Architecture Design Principles](https://www.ncsc.gov.uk/collection/zero-trust-architecture)
+to what the Docker Compose and Kubernetes runtimes actually implement.
+It's an honest accounting — what's working, what's aspirational, and
+what's missing for production.
 
-## Principle 1: Know your architecture
-**Implementation:**
-- Architecture diagrams in `README.md` for both Docker Compose and Kubernetes
-- All components documented: Envoy/Istio, OPA, Keycloak, 3 microservices
-- **Docker Compose:** Service discovery via Docker DNS
-- **Kubernetes:** Service discovery via CoreDNS + Istio service mesh
-- **Istio Integration:** ServiceEntry maps `opa-ext-authz-grpc.local` → `opa.default.svc.cluster.local:9191`
+For component layout and request flow, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For policy detail, see [POLICIES.md](POLICIES.md).
 
-**Architecture Flow (Kubernetes):**
-```
-Client → Istio Gateway → Service Pod [Istio Sidecar + OPA Authorization] → Backend Service
-         ↓
-         RequestAuthentication (JWT validation)
-         ↓
-         AuthorizationPolicy CUSTOM (delegates to OPA)
-         ↓
-         ServiceEntry (resolves OPA service)
-```
+## Principle 1 — Know your architecture
 
-**Test:**
-- Docker: `make compose-start && docker ps`
+- Component layout and request flow documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+- Compose: service discovery via Docker DNS.
+- Kubernetes: service discovery via CoreDNS; OPA reached from
+  istio-proxies via a `ServiceEntry` that maps the synthetic hostname
+  `opa-ext-authz-grpc.local` to `opa.default.svc.cluster.local:9191`.
+
+**Smoke checks:**
+- Compose: `make compose-start && docker compose -f infra/compose/docker-compose.yml ps`
 - Kubernetes: `make k8s-deploy && kubectl get all -A`
 
-## Principle 2: Know your identities
-**Implementation:**
-- **User identities:** Keycloak realm with users (alice/admin, bob/user)
-- **Service identities (Docker):** Each service has unique identity via dedicated Envoy sidecar
-- **Service identities (Kubernetes):** Istio SPIFFE IDs (`spiffe://cluster.local/ns/default/sa/go-service`)
-- **mTLS:** Istio automatic mutual TLS between services
-- **Device identities:** Not implemented (device health would use Keycloak device flow)
+## Principle 2 — Know your identities
 
-**Kubernetes Identity Verification:**
+| Layer | Compose | Kubernetes |
+|---|---|---|
+| End-user | Keycloak users (alice → admin, bob → user) | Same |
+| Workload | No cryptographic identity — services sit behind dedicated Envoy proxies, but no per-service cert | SPIFFE SVIDs (`spiffe://cluster.local/ns/default/sa/<service>`), rotated by istiod |
+| Device | Not implemented | Not implemented |
+
 ```bash
-# Check service identity
-kubectl exec <pod> -c istio-proxy -- curl localhost:15000/certs
+# k8s: inspect a pod's SVID
+kubectl exec <pod> -c istio-proxy -- curl -s localhost:15000/certs | jq
 
-# Verify mTLS
-istioctl x describe pod <pod-name>
+# k8s: describe pod's mesh identity and mTLS posture
+istioctl x describe pod <pod>
 ```
 
-**Test:**
-- Docker: `make compose-start` (Keycloak auto-configures users)
-- Kubernetes: `make k8s-deploy` (includes mTLS configuration)
+## Principle 3 — Assess user behaviour and service health
 
-## Principle 3: Assess user behaviour and service health
-**Implementation:**
-- **User behaviour:**
-  - JWT claims include roles, username, subject ID
-  - OPA decision logs capture user, path, method, allow/deny
-  - Request patterns visible in Envoy/Istio access logs
-- **Service health:**
-  - `/health` endpoints on all services (exempt from authentication)
-  - Kubernetes liveness/readiness probes
-  - Istio health checks
-- **Future:** Add anomaly detection in OPA policies (unusual access patterns)
+- OPA decision logs capture user, method, path, allow/deny per request.
+- Envoy/Istio access logs capture method, status, latency, request ID.
+- All services expose `/health` (exempt from authn).
+- Kubernetes pod probes: the chart sets readiness/liveness on the demo
+  services; Istio's istio-proxy has its own readiness probe at `:15021/healthz/ready`.
+- Anomaly detection in OPA — not implemented.
 
-**Monitoring:**
 ```bash
-# OPA decision logs (both environments)
-docker logs opa -f | grep Decision                    # Docker
-kubectl logs -l app=opa -f | grep -i decision        # Kubernetes
+# OPA decision log stream
+docker logs opa -f | grep -i decision           # compose
+kubectl logs -l app=opa -f | grep -i decision   # k8s
 
-# Istio metrics (Kubernetes)
-kubectl exec <pod> -c istio-proxy -- curl localhost:15000/stats
+# Istio proxy stats
+kubectl exec <pod> -c istio-proxy -- curl -s localhost:15000/stats | head
 ```
 
-## Principle 4: Use policies to authorise requests
-**Implementation:**
-- **Policy Engine:** OPA with declarative Rego policies
-- **Docker Compose:** Policies in `opa/policies/` (3 policy sets)
-- **Kubernetes:** Policies in `opa-k8s/` (RBAC-only and combined sets)
+## Principle 4 — Use policies to authorise requests
 
-**Policy Sets:**
-1. **RBAC only** (`use-one`/`k8s-use-one`):
-   - Admins: Full access (200)
-   - Users: GET only, no /admin/* (200/403)
-   - Anonymous: 401 Unauthorized
-   - Proper HTTP status codes (401 vs 403)
+- **Policy engine:** OPA, Rego policies.
+- **Compose policies:** [`policies/opa/`](../policies/opa/) — three sets: `rbac`, `rbac-rebac-time`, `advanced`.
+- **Kubernetes policies:** [`policies/opa-k8s/`](../policies/opa-k8s/) — two sets: `rbac`, `rbac-rebac-time`.
 
-2. **RBAC + ReBAC + Time** (`use-three`/`k8s-use-three`):
-   - All RBAC rules
-   - Users can only access `/users/{their-sub}/*`
-   - Business hours enforcement (Mon-Fri 9am-5pm UTC)
-   - Admins bypass all restrictions
+The two policy trees express the **same authorization logic** but
+diverge in two technical details:
 
-**Integration:**
-- **Docker:** Envoy ext_authz filter calls OPA directly
-- **Kubernetes:** Istio AuthorizationPolicy CUSTOM delegates to OPA via ServiceEntry
+1. **Response shape.** Compose's Envoy ext_authz filter expects a dict
+   (`{allowed, http_status, body}`) so Envoy can render the HTTP
+   response. Istio's AuthorizationPolicy CUSTOM expects a plain bool.
+2. **JWT source.** Compose policies parse the `Authorization` header
+   themselves; k8s policies read the pre-parsed payload from
+   `metadataContext.filterMetadata["envoy.filters.http.jwt_authn"].jwt_payload`,
+   which istio-proxy populates via the `jwt_authn` filter.
 
-**Test:**
+Policy detail and authorization matrix: [POLICIES.md](POLICIES.md).
+
+| Set | Compose target | k8s target | Rules |
+|---|---|---|---|
+| RBAC | `make compose-use-one` | `make k8s-use-one` | Admin: all. User: GET-only, no `/admin`. Anonymous: 401. |
+| RBAC + ReBAC + Time | `make compose-use-three` | `make k8s-use-three` | + Users may only access `/users/{their-sub}/*`. + Business hours (Mon-Fri 09–17 UTC). Admins bypass. |
+
 ```bash
-# Docker Compose
-make compose-test  # Auto-detects loaded policies
-
-# Kubernetes
-make k8s-test      # Auto-detects loaded policies
+make compose-test           # runs pytest against compose
+make k8s-test               # runs pytest against k8s
+make test-opa               # OPA-direct policy tests (no service layer)
 ```
 
-## Principle 5: Authenticate & authorise everywhere
-**Implementation:**
-- **Authentication (Docker):**
-  - Envoy JWT validation on every request
-  - JWKS URI: Keycloak public keys
-  - Returns 401 for missing/invalid JWT
+## Principle 5 — Authenticate & authorise everywhere
 
-- **Authentication (Kubernetes):**
-  - Istio RequestAuthentication validates JWT format
-  - JWKS URI: `http://keycloak.default.svc.cluster.local:8080/realms/demo/protocol/openid-connect/certs`
-  - Sets `requestPrincipal` for downstream policies
+| | Compose | Kubernetes |
+|---|---|---|
+| JWT validation | Envoy `jwt_authn` filter, JWKS from Keycloak | Istio `RequestAuthentication`, JWKS from `keycloak.default.svc.cluster.local:8080/realms/demo/protocol/openid-connect/certs` |
+| Missing/invalid JWT | OPA policy returns 401 dict; Envoy renders | RequestAuthentication rejects with 401 *before* OPA is consulted |
+| Authorization | OPA via Envoy ext_authz | OPA via Istio AuthorizationPolicy CUSTOM + ServiceEntry |
+| Direct bypass possible? | No external port; services not published | Yes by pod IP if you're inside the cluster — see "What's missing" |
 
-- **Authorization (Both):**
-  - OPA ext_authz filter on every request
-  - Returns 401 for missing JWT, 403 for insufficient permissions
-  - No bypass: Services not exposed directly
+## Principle 6 — Focus monitoring on users, devices, services
 
-- **No trusted network:**
-  - All requests validated regardless of source
-  - Kubernetes NetworkPolicies (future enhancement)
+OPA decision logs are structured JSON. The exact shape depends on which
+policy variant is loaded; here's a sketch of what the multi-policy
+(`rbac-rebac-time`) `decision` rule emits:
 
-**Docker Config:** `envoy/go-service-envoy.yaml` filters
-**Kubernetes Config:**
-```yaml
-RequestAuthentication: jwt-auth
-AuthorizationPolicy: delegate-to-opa
-ServiceEntry: opa-ext-authz-grpc
-```
-
-**Verification:**
-```bash
-# Docker: Check Envoy filter chain
-curl http://localhost:9901/config_dump | jq '.configs[].http_filters'
-
-# Kubernetes: Check Istio proxy config
-kubectl exec <pod> -c istio-proxy -- curl localhost:15000/config_dump | \
-  jq '.configs[].dynamic_listeners[].active_state.listener.filter_chains[].filters[].typed_config.http_filters[] | select(.name == "envoy.filters.http.ext_authz")'
-```
-
-## Principle 6: Focus monitoring on users, devices, services
-**Implementation:**
-- **OPA decision logs (structured JSON):**
-  - User: `preferred_username` from JWT
-  - Action: HTTP method + path
-  - Decision: allow/deny with reason
-  - Response codes: 200/401/403
-  - Policy checks: RBAC, ReBAC, Time-based results
-
-- **Envoy/Istio access logs:**
-  - HTTP method, status, latency
-  - Request ID for correlation
-  - User-Agent, source IP
-
-- **Kubernetes additions:**
-  - Istio telemetry (Prometheus metrics)
-  - Service mesh observability
-  - Distributed tracing ready (OpenTelemetry)
-
-- **Future:**
-  - Integrate with OpenTelemetry for full observability
-  - Correlate OPA decisions with service traces
-  - Grafana dashboards for authorization patterns
-
-**Monitor:**
-```bash
-# Docker
-docker logs opa -f | grep Decision
-
-# Kubernetes
-kubectl logs -l app=opa -f | grep -i decision
-
-# Sample decision log
+```json
 {
-  "decision_id": "abc123",
-  "input": {
-    "attributes": {
-      "request": {
-        "http": {
-          "method": "POST",
-          "path": "/api/data",
-          "headers": {"authorization": "Bearer ..."}
-        }
-      }
-    }
-  },
-  "result": false,
+  "decision_id": "...",
   "user": "bob",
-  "checks": {
-    "rbac": false,
-    "rebac": true,
-    "time_based": true
-  }
+  "path": "/admin/users",
+  "checks": {"rbac": false, "rebac": true, "time_based": true},
+  "result": false
 }
 ```
 
-## Principle 7: Don't trust any network
-**Implementation:**
-- **Assumption:** Network is hostile (no network-based trust)
-- **Encryption:**
-  - Docker: TLS termination at Envoy sidecars
-  - Kubernetes: Istio automatic mTLS between services
-  - External traffic: TLS at Istio Gateway (production: HTTPS ingress)
+The single-policy RBAC variant has no nested `checks` field.
 
-- **Validation:**
-  - JWT verified cryptographically (RSA signatures)
-  - Not based on network position, source IP, or VPN
-  - All services validate every request
-
-- **Kubernetes mTLS:**
-  - Automatic SPIFFE identity (`spiffe://cluster.local/ns/default/sa/<service>`)
-  - Mutual authentication between services
-  - Certificate rotation handled by Istio
-
-**Verify mTLS (Kubernetes):**
 ```bash
-# Check PeerAuthentication
-kubectl get peerauthentication -A
-
-# View service certificates
-kubectl exec <pod> -c istio-proxy -- curl localhost:15000/certs
-
-# Verify mTLS mode
-istioctl x describe pod <pod-name>
+docker logs opa -f | grep -i decision
+kubectl logs -l app=opa -f | grep -i decision
 ```
 
-**Note:**
-- ✅ **Kubernetes:** Full mTLS implemented via Istio
-- ⚠️ **Docker:** TLS termination only (mTLS between services not implemented)
+**Not yet wired:** OpenTelemetry, Prometheus scraping, Grafana
+dashboards. The mesh emits stats at `:15020` per proxy if you want to
+hook a Prometheus instance up manually.
 
-## Principle 8: Choose services designed for zero trust
-**Implementation:**
-- **Envoy/Istio:**
-  - Built for zero trust architectures
-  - JWT validation (RFC 7519)
-  - ext_authz filter for external authorization
-  - mTLS with certificate rotation (Istio)
-  - SPIFFE/SPIRE identity framework (Istio)
+## Principle 7 — Don't trust any network
 
-- **OPA:**
-  - Policy-as-code (version controlled)
-  - Testable policies (`make test-opa`)
-  - Declarative Rego language
-  - gRPC ext_authz API
-  - Auditable decision logs
+- **JWT verification is cryptographic** (RSA signature against Keycloak
+  JWKS) and happens at every hop — that's the load-bearing part of "no
+  network trust" here.
+- **Transport encryption status:**
+  - Compose: **plaintext HTTP** between client, Envoy, and the
+    application container. No TLS, no mTLS. The PoC runs on localhost.
+  - Kubernetes: Istio auto-mTLS works in **PERMISSIVE** mode by default,
+    which accepts mTLS *and* plaintext. The umbrella chart does not
+    currently ship a `PeerAuthentication` resource forcing STRICT mode.
+    To require mTLS, add a STRICT PeerAuthentication — tracked as open
+    work.
 
-- **Keycloak:**
-  - Standards-based (OAuth2/OIDC, SAML)
-  - JWT issuer with JWKS endpoint
-  - Supports device flows, MFA, custom claims
-  - Centralized identity management
+```bash
+# Confirm current mTLS posture
+kubectl get peerauthentication -A
+istioctl x describe pod <pod>
+```
 
-- **All services:**
-  - Stateless (12-factor apps)
-  - Cloud-native (containerized)
-  - Sidecar-compatible
-  - Health check endpoints
-  - Kubernetes-ready with Istio injection
+## Principle 8 — Choose services designed for zero trust
 
-**Standards Compliance:**
-- JWT (RFC 7519)
-- OIDC (OpenID Connect)
-- SPIFFE (Secure Production Identity Framework)
-- gRPC ext_authz (Envoy standard)
-- Istio AuthorizationPolicy (Kubernetes standard)
+- **Envoy / Istio:** JWT (RFC 7519), ext_authz filter, SPIFFE-compliant
+  workload identity (Istio), automatic cert rotation.
+- **OPA:** policy-as-code, gRPC ext_authz API, decision logs.
+- **Keycloak:** OAuth2/OIDC standards, JWKS, supports MFA and custom
+  claims via protocol mappers.
+- **Demo services:** stateless, containerized, `/health` endpoint,
+  Istio-injection-compatible.
 
----
+Standards in use: JWT (RFC 7519), OIDC, SPIFFE, gRPC ext_authz, Istio
+AuthorizationPolicy. **Note:** `make test-opa` runs pytest against OPA's
+REST API; it does *not* invoke OPA's own `opa test` framework.
 
-## Implementation Matrix
+## Implementation matrix
 
-| Principle | Docker Compose | Kubernetes | Status |
-|-----------|---------------|------------|--------|
-| **1. Know architecture** | ✅ Documented | ✅ Documented + Istio | Complete |
-| **2. Identities** | ✅ Users + Services | ✅ Users + mTLS SPIFFE | Complete |
-| **3. Assess behaviour** | ✅ OPA logs | ✅ OPA + Istio metrics | Complete |
-| **4. Policy authorization** | ✅ OPA RBAC/ReBAC/Time | ✅ OPA RBAC/ReBAC/Time | Complete |
-| **5. AuthN/Z everywhere** | ✅ Envoy + OPA | ✅ Istio + OPA | Complete |
-| **6. Monitoring** | ⚠️ Basic logs | ⚠️ Logs + Istio telemetry | Partial |
-| **7. Don't trust network** | ⚠️ TLS only | ✅ Full mTLS | Complete (K8s) |
-| **8. Zero trust services** | ✅ Envoy/OPA/Keycloak | ✅ Istio/OPA/Keycloak | Complete |
+| Principle | Compose | Kubernetes |
+|---|---|---|
+| 1. Know architecture | Documented | Documented |
+| 2. Identities (user) | ✅ | ✅ |
+| 2. Identities (workload) | ❌ no cert | ✅ SPIFFE SVID |
+| 3. Behaviour / health | Logs + `/health` | Logs + `/health` + pod probes |
+| 4. Policy authorization | ✅ OPA | ✅ OPA |
+| 5. AuthN/Z everywhere | ✅ at each Envoy | ✅ at each sidecar |
+| 6. Monitoring | OPA + access logs | OPA + access logs + Istio stats |
+| 7. Encryption in transit | ❌ plaintext | ⚠️ Istio PERMISSIVE, not STRICT |
+| 8. ZT-native components | ✅ | ✅ |
 
-## What's Complete (Production-Ready)
+## What's missing for production
 
-### Docker Compose
-- ✅ JWT authentication with proper 401/403 status codes
-- ✅ Policy-based authorization (RBAC + ReBAC + Time)
-- ✅ Envoy sidecar pattern
-- ✅ Hot-reload policies
-- ✅ Automated testing
-- ⚠️ TLS termination only (no mTLS between services)
-- ⚠️ Basic logging (no full observability stack)
+**Both runtimes:**
+- Device health attestation
+- Continuous verification / token re-evaluation
+- Centralized observability (OpenTelemetry, Prometheus, dashboards)
+- Anomaly detection in policy
 
-### Kubernetes
-- ✅ **Istio service mesh integration**
-- ✅ **Automatic mTLS with SPIFFE identities**
-- ✅ **RequestAuthentication for JWT validation**
-- ✅ **AuthorizationPolicy CUSTOM with ServiceEntry**
-- ✅ **Proper HTTP status codes (401/403)**
-- ✅ **Multi-policy composition (RBAC + ReBAC + Time)**
-- ✅ Hot-reload policies
-- ✅ Automated testing with policy detection
-- ⚠️ Basic logging (ready for OpenTelemetry integration)
+**Compose only:**
+- Any transport encryption (the PoC is plaintext-on-localhost)
+- Workload identity / cert rotation
 
-## What's Missing (for production)
+**Kubernetes only:**
+- `PeerAuthentication` STRICT to make mTLS mandatory
+- `NetworkPolicy` to block direct pod-IP access and enforce the sidecar
+  as the only network path
+- RBAC restrictions on `kubectl exec` (defense against API-level bypass)
+- TLS on the Istio Gateway (currently HTTP)
+- OpenTelemetry hookup
 
-**Both Environments:**
-- ❌ Device health attestation
-- ❌ Continuous verification (periodic re-auth)
-- ❌ Full observability stack (OpenTelemetry)
-- ❌ Anomaly detection in OPA policies
-- ❌ Network policies (Kubernetes) / Network segmentation (Docker)
+See [ADR-002](adrs/ADR-002-SIDECAR-BYPASS-PREVENTION-IN-ZTA.md) for the
+bypass-prevention discussion and the tracked work to close these gaps.
 
-**Docker Compose Only:**
-- ❌ mTLS between services (use Kubernetes for this)
-- ❌ Service identity rotation
+## Migration path: Compose → Kubernetes
 
-**Kubernetes Only:**
-- ⚠️ OpenTelemetry integration (ready but not configured)
-- ⚠️ Advanced Istio features (traffic splitting, circuit breaking)
+Compose is the inner-loop development environment: fast iteration on
+Rego, no cluster overhead, plaintext networking that's easy to inspect.
 
-## Migration Path: Docker → Kubernetes
-
-This PoC demonstrates a clear migration path:
-
-1. **Development (Docker Compose):**
-   - Rapid iteration on policies
-   - Test Envoy + OPA integration
-   - Validate JWT flows
-   - Debug policy logic
-
-2. **Production (Kubernetes):**
-   - Deploy with `make k8s-deploy`
-   - Automatic mTLS via Istio
-   - ServiceEntry for OPA resolution
-   - Production-grade orchestration
-   - Rolling updates, health checks
-   - Observability ready
-
-**Key Architectural Difference:**
-- Docker: Manual Envoy sidecar configuration
-- Kubernetes: Automatic Istio sidecar injection + AuthorizationPolicy
-
-Both use **identical OPA policies** - just different policy loading commands (`make compose-use-one` vs `make k8s-use-one`).
-
-## Compliance Notes
-
-This implementation demonstrates:
-- ✅ **NCSC ZTA principles 1-8** (with noted gaps)
-- ✅ **NIST SP 800-207** implicit trust zones → zero trust
-- ✅ **OAuth2/OIDC standards** for authentication
-- ✅ **Kubernetes security best practices** (when using K8s deployment)
-- ✅ **Service mesh patterns** (Istio)
-
-**For production compliance:**
-- Add OpenTelemetry for full observability
-- Implement NetworkPolicies (Kubernetes)
-- Enable Istio AuthorizationPolicy for defense in depth
-- Add device health checks (Keycloak device flow)
-- Implement continuous verification policies in OPA
+Kubernetes is where the zero-trust properties (workload identity,
+mTLS, NetworkPolicy) become available. The two runtimes share the same
+Keycloak realm and the same logical policy, just expressed in
+transport-appropriate forms (see Principle 4).
