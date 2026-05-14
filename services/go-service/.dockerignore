@@ -1,0 +1,30 @@
+# VCS / IDE / OS
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# Local build output (we build inside the container)
+bin/
+*.exe
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Go module cache & vendoring artifacts shouldn't be context bloat;
+# the build does `go mod download` itself.
+vendor/
+
+# Docs / project meta (not needed by the build)
+README.md
+Dockerfile
+.dockerignore
+
+# Environment files (avoid leaking secrets into images)
+.env
+.env.*
+!.env.example

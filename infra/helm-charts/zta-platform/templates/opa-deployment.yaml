@@ -1,0 +1,53 @@
+{{- if .Values.opa.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  labels:
+    {{- include "zta-platform.labels" . | nindent 4 }}
+    app: opa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opa
+  template:
+    metadata:
+      labels:
+        app: opa
+        {{- include "zta-platform.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: opa
+          image: "{{ .Values.opa.image.repository }}:{{ .Values.opa.image.tag }}"
+          imagePullPolicy: {{ .Values.opa.image.pullPolicy }}
+          args:
+            - "run"
+            - "--server"
+            - "--addr=0.0.0.0:{{ .Values.opa.httpPort }}"
+            - "--diagnostic-addr=0.0.0.0:{{ .Values.opa.diagnosticPort }}"
+            - "--set=plugins.envoy_ext_authz_grpc.addr=:{{ .Values.opa.grpcPort }}"
+            - "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow"
+            - "--set=decision_logs.console=true"
+          ports:
+            - name: http
+              containerPort: {{ .Values.opa.httpPort }}
+            - name: grpc
+              containerPort: {{ .Values.opa.grpcPort }}
+            - name: diagnostic
+              containerPort: {{ .Values.opa.diagnosticPort }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: diagnostic
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health?plugins
+              port: diagnostic
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.opa.resources | nindent 12 }}
+{{- end }}

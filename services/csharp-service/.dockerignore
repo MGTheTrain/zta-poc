@@ -1,0 +1,47 @@
+# VCS / IDE / OS
+.git
+.gitignore
+.gitattributes
+.vs
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# .NET build output — by far the biggest reason this file exists.
+# `dotnet restore` + `dotnet build` happen inside the image; shipping
+# host build artifacts bloats context, busts cache, and can confuse
+# the in-container restore.
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Test output
+TestResults/
+[Cc]overage/
+*.coverage
+*.coveragexml
+
+# Publish output
+publish/
+out/
+
+# Docs / project meta
+README.md
+Dockerfile
+.dockerignore
+
+# Environment files (avoid leaking secrets into images)
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Local.json

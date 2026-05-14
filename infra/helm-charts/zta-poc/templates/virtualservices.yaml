@@ -1,0 +1,29 @@
+{{- $services := list "go-service" "python-service" "csharp-service" -}}
+{{- range $svc := $services }}
+{{- /* Skip if the subchart is disabled */}}
+{{- if (index $.Values $svc).enabled }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ $svc }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $.Chart.Name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  hosts:
+    - {{ $svc }}.local
+  gateways:
+    - {{ $.Values.istio.gatewayName }}
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: {{ $svc }}
+            port:
+              number: {{ (index $.Values $svc).service.port }}
+{{- end }}
+{{- end }}

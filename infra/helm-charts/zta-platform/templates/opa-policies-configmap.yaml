@@ -1,0 +1,25 @@
+{{- if .Values.opa.enabled }}
+{{- /*
+  Slurp every .rego under files/opa-policies/<policySet>/ into a single
+  ConfigMap. Switching .Values.opa.policySet between releases regenerates
+  this ConfigMap with different content; the OPA Deployment uses a
+  checksum annotation so the Pod rolls automatically.
+
+  Keys in the ConfigMap are the basenames of the rego files. OPA's
+  bundle directory loader doesn't care about hierarchy as long as the
+  package declarations inside the files are consistent.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies
+  labels:
+    {{- include "zta-platform.labels" . | nindent 4 }}
+data:
+  {{- $policySet := .Values.opa.policySet -}}
+  {{- $glob := printf "files/opa-policies/%s/*.rego" $policySet -}}
+  {{- range $path, $_ := .Files.Glob $glob }}
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+  {{- end }}
+{{- end }}

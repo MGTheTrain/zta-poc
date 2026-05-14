@@ -1,11 +1,14 @@
-version: '3.8'
+# PROJECT_ROOT anchors bind-mount paths. The Makefile defaults it to the
+# repo root so running `make` outside a devcontainer Just Works; inside a
+# devcontainer, it's wired via remoteEnv in .devcontainer/devcontainer.json.
+#
+# OPA_POLICY_SET selects which policy bundle OPA loads at startup
+# (rbac | rbac-rebac-time | advanced). Defaults to rbac-rebac-time.
 
 services:
   # IAM
   keycloak:
-    build:
-      context: ./keycloak
-      dockerfile: Dockerfile
+    image: quay.io/keycloak/keycloak:23.0.4
     container_name: keycloak
     restart: always
     environment:
@@ -18,12 +21,15 @@ services:
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak
     command: start-dev --import-realm
+    volumes:
+      - ${PROJECT_ROOT}/configs/keycloak:/opt/keycloak/data/import:ro
     ports:
       - "8180:8080"
     depends_on:
       - keycloak_postgres
     networks:
       - zta-network
+
   keycloak_postgres:
     image: postgres:16-alpine
     container_name: keycloak_postgres
@@ -48,6 +54,9 @@ services:
       - "--set=plugins.envoy_ext_authz_grpc.addr=:9191"
       - "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow"
       - "--set=decision_logs.console=true"
+      - "/policies"
+    volumes:
+      - ${PROJECT_ROOT}/policies/opa/${OPA_POLICY_SET:-rbac-rebac-time}:/policies:ro
     ports:
       - "8181:8181"
       - "9191:9191"
@@ -57,7 +66,7 @@ services:
   # Service 1: Go Service (with Envoy sidecar)
   go-service:
     build:
-      context: ../services/go-service
+      context: ${PROJECT_ROOT}/services/go-service
       dockerfile: Dockerfile
     container_name: go-service
     environment:
@@ -72,10 +81,10 @@ services:
       retries: 3
 
   go-service-envoy:
-    build:
-      context: ./envoy
-      dockerfile: Dockerfile.go-service
+    image: envoyproxy/envoy:v1.29.1
     container_name: go-service-envoy
+    volumes:
+      - ${PROJECT_ROOT}/configs/envoy/go-service-envoy.yaml:/etc/envoy/envoy.yaml:ro
     ports:
       - "9001:8000"
     networks:
@@ -85,10 +94,10 @@ services:
       - opa
       - keycloak
 
-  # Service 2: Python Service (with Envoy sidecar)
+  # Service 2: Python Service (with Envoy sidecar) ─────────────────────
   python-service:
     build:
-      context: ../services/python-service
+      context: ${PROJECT_ROOT}/services/python-service
       dockerfile: Dockerfile
     container_name: python-service
     environment:
@@ -103,10 +112,10 @@ services:
       retries: 3
 
   python-service-envoy:
-    build:
-      context: ./envoy
-      dockerfile: Dockerfile.python-service
+    image: envoyproxy/envoy:v1.29.1
     container_name: python-service-envoy
+    volumes:
+      - ${PROJECT_ROOT}/configs/envoy/python-service-envoy.yaml:/etc/envoy/envoy.yaml:ro
     ports:
       - "9002:8000"
     networks:
@@ -119,7 +128,7 @@ services:
   # Service 3: C# Service (with Envoy sidecar)
   csharp-service:
     build:
-      context: ../services/csharp-service
+      context: ${PROJECT_ROOT}/services/csharp-service
       dockerfile: Dockerfile
     container_name: csharp-service
     environment:
@@ -134,10 +143,10 @@ services:
       retries: 3
 
   csharp-service-envoy:
-    build:
-      context: ./envoy
-      dockerfile: Dockerfile.csharp-service
+    image: envoyproxy/envoy:v1.29.1
     container_name: csharp-service-envoy
+    volumes:
+      - ${PROJECT_ROOT}/configs/envoy/csharp-service-envoy.yaml:/etc/envoy/envoy.yaml:ro
     ports:
       - "9003:8000"
     networks:

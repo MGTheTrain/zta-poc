@@ -1,0 +1,10 @@
+apiVersion: v2
+name: zta-platform
+description: |
+  Platform components for the ZTA PoC — Open Policy Agent and
+  Keycloak — plus the ConfigMaps that carry their policies and
+  realm definition. Consumed as a dependency of the zta-poc
+  umbrella chart.
+type: application
+version: 0.1.0
+appVersion: "1.0"

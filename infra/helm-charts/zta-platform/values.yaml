@@ -1,0 +1,38 @@
+# zta-platform — defaults. Umbrella overrides via the "zta-platform" key
+# in its own values.yaml.
+
+opa:
+  enabled: true
+  policySet: rbac-rebac-time        # rbac | rbac-rebac-time | advanced
+  image:
+    repository: openpolicyagent/opa
+    tag: 0.60.0-envoy
+    pullPolicy: IfNotPresent
+  httpPort: 8181
+  grpcPort: 9191
+  diagnosticPort: 8282
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+keycloak:
+  enabled: true
+  image:
+    repository: quay.io/keycloak/keycloak
+    tag: "23.0.4"
+    pullPolicy: IfNotPresent
+  admin:
+    user: admin
+    password: admin
+  realmName: demo
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi

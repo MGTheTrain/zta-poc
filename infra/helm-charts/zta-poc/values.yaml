@@ -1,0 +1,115 @@
+# ===========================================================================
+# zta-poc — umbrella values
+# ===========================================================================
+# Single source of truth for the Kubernetes deployment. Each top-level key
+# matches a dependency alias in Chart.yaml and is passed straight through.
+#
+# The Istio CRDs (Gateway, VirtualService, AuthorizationPolicy,
+# RequestAuthentication, ServiceEntry) and the hook Jobs live in this
+# chart's templates/ directly — they tie the platform and services
+# together and don't belong to any one subchart.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Cluster-level toggles consumed by THIS chart's templates/
+# ---------------------------------------------------------------------------
+istio:
+  gatewayName: zta-gateway
+  # extensionProviders entry name; must match what AuthorizationPolicy refers to
+  extensionProviderName: opa-ext-authz-grpc
+  # namespace where istiod lives (needed for the meshConfig patch hook)
+  istiodNamespace: istio-system
+
+jwt:
+  issuer: "http://localhost:8180/realms/demo"
+  jwksUri: "http://keycloak.default.svc.cluster.local:8080/realms/demo/protocol/openid-connect/certs"
+
+# ---------------------------------------------------------------------------
+# zta-platform — OPA, Keycloak, and the policies/realm ConfigMaps
+# ---------------------------------------------------------------------------
+zta-platform:
+  enabled: true
+
+  opa:
+    # Which folder under files/opa-policies/ gets baked into the policy
+    # ConfigMap. Override at install time:
+    #   helm upgrade --reuse-values --set zta-platform.opa.policySet=rbac zta-poc ...
+    policySet: rbac-rebac-time     # rbac | rbac-rebac-time | advanced
+    image:
+      repository: openpolicyagent/opa
+      tag: 0.60.0-envoy
+    grpcPort: 9191
+    httpPort: 8181
+
+  keycloak:
+    image:
+      repository: quay.io/keycloak/keycloak
+      tag: "23.0.4"
+    admin:
+      user: admin
+      password: admin
+    realmName: demo
+
+# ---------------------------------------------------------------------------
+# Demo services. Each block is passed verbatim to the subchart of the
+# same alias, so the keys are the leaf chart's own values keys.
+# ---------------------------------------------------------------------------
+go-service:
+  enabled: true
+  # Force the resource name to just `go-service` regardless of release name,
+  # because the VirtualService in this umbrella's templates routes to
+  # destination.host: go-service.
+  fullnameOverride: go-service
+  image:
+    repository: zta-poc-go-service
+    tag: latest
+    pullPolicy: Never
+  service:
+    port: 8080
+    targetPort: 8080
+    type: ClusterIP
+  podLabels:
+    security: zta-enabled
+    version: v1
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+
+python-service:
+  enabled: true
+  fullnameOverride: python-service
+  image:
+    repository: zta-poc-python-service
+    tag: latest
+    pullPolicy: Never
+  service:
+    port: 8080
+    targetPort: 8080
+    type: ClusterIP
+  podLabels:
+    security: zta-enabled
+    version: v1
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+
+csharp-service:
+  enabled: true
+  fullnameOverride: csharp-service
+  image:
+    repository: zta-poc-csharp-service
+    tag: latest
+    pullPolicy: Never
+  service:
+    port: 8080
+    targetPort: 8080
+    type: ClusterIP
+  podLabels:
+    security: zta-enabled
+    version: v1
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+
+hooks:
+  image:
+    repository: alpine/k8s
+    tag: "1.31.4"
+    pullPolicy: IfNotPresent

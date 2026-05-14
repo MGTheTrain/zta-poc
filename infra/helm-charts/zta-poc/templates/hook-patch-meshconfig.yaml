@@ -1,0 +1,77 @@
+{{- /*
+  Pre-install / pre-upgrade hook: register OPA as an Istio
+  extensionProvider in the istio-system/istio ConfigMap, then bounce
+  istiod so the new mesh config is loaded.
+
+  This is the single piece of "ownership crosses chart boundaries"
+  glue — configmap/istio is owned by the istiod release, not by us.
+  A Job is the cleanest way to express this in Helm. Idempotent:
+  the patch is content-addressed (same input → same output), and
+  rollout restart is a no-op if istiod is already on the latest
+  config.
+
+  hook-weight -5 puts this BEFORE the AuthorizationPolicy is
+  applied, so istiod never sees a policy referring to an
+  unregistered extensionProvider.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zta-poc-patch-meshconfig
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: zta-poc-hooks
+      restartPolicy: OnFailure
+      containers:
+        - name: patch
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - bash
+            - -ec
+            - |
+              ns={{ .Values.istio.istiodNamespace | quote }}
+              provider={{ .Values.istio.extensionProviderName | quote }}
+              port={{ index .Values "zta-platform" "opa" "grpcPort" }}
+
+              # Idempotent merge-patch. Helm runs this every upgrade;
+              # if the content is already correct, nothing happens.
+              if kubectl -n "${ns}" get configmap istio -o yaml \
+                  | grep -q "name: ${provider}"; then
+                echo "  meshConfig already has ${provider}, skipping patch"
+                exit 0
+              fi
+
+              echo "  patching configmap/istio with extensionProviders..."
+              # Use a heredoc'd YAML patch so we don't depend on jq.
+              # The data.mesh field is itself a YAML string; we
+              # ship the entire desired mesh-config block as a
+              # multi-line string in one merge patch.
+              cat <<EOF > /tmp/patch.yaml
+              data:
+                mesh: |
+                  extensionProviders:
+                  - name: ${provider}
+                    envoyExtAuthzGrpc:
+                      service: ${provider}.local
+                      port: ${port}
+              EOF
+              kubectl -n "${ns}" patch configmap istio --type merge --patch-file /tmp/patch.yaml
+
+              echo "  restarting istiod to pick up new meshConfig..."
+              kubectl -n "${ns}" rollout restart deployment/istiod
+              kubectl -n "${ns}" rollout status deployment/istiod --timeout=2m

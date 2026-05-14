@@ -1,0 +1,15 @@
+dependencies:
+- name: zta-platform
+  repository: file://../zta-platform
+  version: 0.1.0
+- name: go-service
+  repository: file://../services/go-service
+  version: 0.1.0
+- name: python-service
+  repository: file://../services/python-service
+  version: 0.1.0
+- name: csharp-service
+  repository: file://../services/csharp-service
+  version: 0.1.0
+digest: sha256:03d76ed4c1ff508716c038fb5eba898a0be0d8791b9a5a66e0feda22b60949b5
+generated: "2026-05-14T10:30:18.677454292Z"

@@ -1,7 +1,5 @@
 # Zero Trust Architecture PoC
 
-![Completed](https://img.shields.io/badge/status-completed-006400)
-
 Zero Trust implementation demonstrating JWT authentication, policy-based authorization and service mesh integration across Go, Python and C# services using Istio, OPA and Keycloak.
 
 ## Quick Start
@@ -276,7 +274,7 @@ Edit `docker-compose.yml` port mappings
 - Custom JWT claims - Needs Keycloak user mappers
 
 **See:** 
-- [Advanced rego policy implementations](infra/opa/advanced/)
+- [Advanced rego policy implementations](policies/opa/advanced/)
 - [Advanced ABAC Examples](docs/ABAC-EXAMPLES.md)
 
 ## Resources

@@ -1,0 +1,8 @@
+# Files staged at deploy time by scripts/deploy-to-kind.sh. Source of truth
+# lives at policies/opa-k8s/ and configs/keycloak/ — don't commit the copies.
+keycloak/*
+opa-policies/*/*
+
+# But keep the directory structure
+!keycloak/.gitkeep
+!opa-policies/*/.gitkeep

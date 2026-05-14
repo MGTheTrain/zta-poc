@@ -1,3 +1,0 @@
-# envoy/Dockerfile.python-service
-FROM envoyproxy/envoy:v1.29.1
-COPY python-service-envoy.yaml /etc/envoy/envoy.yaml

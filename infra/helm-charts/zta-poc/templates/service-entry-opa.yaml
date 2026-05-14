@@ -1,0 +1,25 @@
+{{- /*
+  Lets the istio mesh resolve the synthetic hostname
+  "opa-ext-authz-grpc.local" (referenced from the istiod
+  extensionProviders config) back to the real OPA service.
+  Mirrors what was applied inline in deploy-to-kind.sh.
+*/}}
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: {{ .Values.istio.extensionProviderName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  hosts:
+    - {{ .Values.istio.extensionProviderName }}.local
+  endpoints:
+    - address: opa.{{ .Release.Namespace }}.svc.cluster.local
+  ports:
+    - name: grpc
+      number: {{ index .Values "zta-platform" "opa" "grpcPort" }}
+      protocol: GRPC
+  resolution: DNS
+  location: MESH_INTERNAL

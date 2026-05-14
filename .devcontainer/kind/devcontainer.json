@@ -30,5 +30,9 @@
         "443": {"label": "Istio Gateway HTTPS"},
         "15021": {"label": "Istio Health Check"},
         "15443": {"label": "Istio SNI Routing"}
+    },
+    "remoteEnv": {
+        "PROJECT_ROOT": "${localWorkspaceFolder}",
+        "OPA_POLICY_SET": "rbac-rebac-time"
     }
 }

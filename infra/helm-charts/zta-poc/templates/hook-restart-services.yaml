@@ -1,0 +1,56 @@
+{{- /*
+  Post-install / post-upgrade hook: roll the three service Deployments
+  so each Envoy sidecar reconnects to istiod and picks up the new
+  AuthorizationPolicy. Mirrors the final `kubectl rollout restart` in
+  deploy-to-kind.sh.
+
+  Why a hook and not just rely on the AuthorizationPolicy being
+  pushed via xDS automatically: Istio does push policy updates to
+  existing sidecars, but on a *fresh* install the Pods are sometimes
+  created before the AuthorizationPolicy lands, leaving the sidecar
+  with no policy and allowing requests through. Restarting after the
+  release converges removes the race.
+
+  hook-weight 10 puts this AFTER the service Deployments themselves
+  have been applied by Helm.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zta-poc-restart-services
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: zta-poc-hooks
+      restartPolicy: OnFailure
+      containers:
+        - name: restart
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - bash
+            - -ec
+            - |
+              ns={{ .Release.Namespace | quote }}
+              for svc in go-service python-service csharp-service; do
+                if kubectl -n "${ns}" get deployment "${svc}" >/dev/null 2>&1; then
+                  echo "  rolling ${svc}..."
+                  kubectl -n "${ns}" rollout restart deployment/"${svc}"
+                  kubectl -n "${ns}" rollout status deployment/"${svc}" --timeout=2m
+                else
+                  echo "  ${svc} not present, skipping"
+                fi
+              done

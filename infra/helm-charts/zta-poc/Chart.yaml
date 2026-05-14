@@ -1,0 +1,45 @@
+apiVersion: v2
+name: zta-poc
+description: |
+  Zero Trust Architecture PoC — umbrella chart. Bundles the platform
+  components (OPA, Keycloak, Istio CRDs, AuthorizationPolicy +
+  RequestAuthentication) together with the three demo services
+  (go, python, csharp) so the whole stack deploys in one
+  `helm upgrade --install`.
+
+  Istio itself is NOT a dependency of this chart — it's installed
+  separately by scripts/deploy-to-kind.sh, because Istio's own
+  upgrade docs recommend keeping istio-base, istiod, and gateway
+  as independent Helm releases.
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - zero-trust
+  - opa
+  - keycloak
+  - istio
+
+dependencies:
+  - name: zta-platform
+    version: "0.1.0"
+    repository: "file://../zta-platform"
+    condition: zta-platform.enabled
+
+  - name: go-service
+    version: "0.1.0"
+    repository: "file://../services/go-service"
+    condition: go-service.enabled
+    alias: go-service
+
+  - name: python-service
+    version: "0.1.0"
+    repository: "file://../services/python-service"
+    condition: python-service.enabled
+    alias: python-service
+
+  - name: csharp-service
+    version: "0.1.0"
+    repository: "file://../services/csharp-service"
+    condition: csharp-service.enabled
+    alias: csharp-service
