@@ -3,7 +3,7 @@ parent: Decisions
 nav_order: 002
 title: Sidecar Bypass Prevention Strategy
 status: proposed
-date: 2025-12-14
+date: 2026-05-14
 decision-makers: Architecture Team, Security Team
 consulted: Platform Engineering, Development Teams
 informed: All Engineering
@@ -52,14 +52,24 @@ This approach aligns with Zero Trust principles: even if one layer is compromise
 
 ### Confirmation
 
-Decision validated through:
-- Network policy enforcement verified by testing direct pod-to-pod connection attempts (expected: connection refused)
-- STRICT mTLS mode verified through Istio configuration inspection (expected: plaintext traffic rejected)
-- RBAC verified by attempting `kubectl exec` as non-privileged user (expected: Forbidden error)
-- End-to-end application functionality maintained through Istio Gateway with all security layers active
-- Automated test suites passing with all policies enabled
+The defense-in-depth decision is recorded; the supporting manifests are
+not yet shipped by the umbrella chart in this PoC. Concretely:
 
-Supporting validation scripts documented in repository for reproducibility.
+- **AuthorizationPolicy CUSTOM + RequestAuthentication**: implemented,
+  exercised by `make k8s-test`.
+- **STRICT PeerAuthentication**: not shipped. Istio's mesh-wide
+  PERMISSIVE default applies, which means mTLS happens between injected
+  sidecars but unencrypted traffic is also accepted. Tracked in
+  [ROADMAP.md](../../ROADMAP.md).
+- **NetworkPolicies restricting pod-to-pod traffic**: not shipped.
+  Tracked in ROADMAP.md.
+- **Restrictive RBAC blocking `kubectl exec`**: not shipped — the kind
+  cluster's default RBAC applies. Tracked in ROADMAP.md.
+
+Validation procedures for each layer (connection-refused for direct
+pod-to-pod attempts, plaintext-rejected for non-mTLS traffic,
+forbidden-exec for unauthorized `kubectl exec`) will be added alongside
+the manifests when they land.
 
 ## Pros and Cons of the Options
 
