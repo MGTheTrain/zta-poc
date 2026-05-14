@@ -1,18 +1,18 @@
 ### SPIFFE (Secure Production Identity Framework for Everyone)
 
-SPIFFE is a universal identity system for software services. Instead of 
-using passwords or IP addresses to identify services, SPIFFE gives each 
+SPIFFE is a universal identity system for software services. Instead of
+using passwords or IP addresses to identify services, SPIFFE gives each
 service a cryptographic identity (like a digital passport).
 
-**Problem it solves**: In dynamic cloud environments, services move 
-between machines, so IP-based security breaks. SPIFFE provides portable 
+**Problem it solves**: In dynamic cloud environments, services move
+between machines, so IP-based security breaks. SPIFFE provides portable
 identity.
 
-**How it works**: Each service gets an SVID (SPIFFE Verifiable Identity 
-Document) - a short-lived certificate with a unique ID like 
+**How it works**: Each service gets an SVID (SPIFFE Verifiable Identity
+Document) - a short-lived certificate with a unique ID like
 `spiffe://cluster.local/ns/default/sa/payment-service`.
 
-**Why Istio uses it**: Enables automatic mTLS between services without 
+**Why Istio uses it**: Enables automatic mTLS between services without
 manual certificate management.
 
 Below is the Mermaid sequence diagram that illustrates the workflow for SPIFFE identity management and mTLS communication within a service mesh (like Istio). This diagram shows the behavior of how Istio issues and verifies certificates, enabling secure communication between services.
@@ -30,12 +30,12 @@ sequenceDiagram
     Istiod->>EnvoyA: Return Signed Certificate (SVID)
     EnvoyA->>EnvoyA: Store SVID for Service A
     EnvoyA->>B: Send Request to Service B with mTLS (SVID)
-    
+
     EnvoyB->>EnvoyB: Verify Certificate (Check SPIFFE ID)
     EnvoyB->>Istiod: Validate Certificate from Service A
     Istiod->>EnvoyB: Confirm Certificate is Signed by Istiod
     EnvoyB->>+EnvoyA: mTLS Handshake (Authenticate)
-    
+
     EnvoyB->>EnvoyB: Check Authorization (if applicable)
     EnvoyB->>B: Forward Request (if authorized)
     B->>EnvoyB: Process Response

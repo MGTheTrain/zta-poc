@@ -11,11 +11,11 @@ default allowed = false
 allowed {
     # Check if user has exceeded rate limit
     user_id := jwt_payload.sub
-    
+
     # Get request count from data (populated by OPA data API)
-    request_count := count([r | r := data.rate_limit[user_id][_]; 
+    request_count := count([r | r := data.rate_limit[user_id][_];
                              r.timestamp > time.now_ns() - 3600000000000])
-    
+
     request_count < 100
 }
 

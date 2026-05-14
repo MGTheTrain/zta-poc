@@ -94,10 +94,10 @@ Implementation documented in repository deployment scripts and verified through 
 
 ## More Information
 
-**SPIFFE Compliance Context**: 
+**SPIFFE Compliance Context**:
 Istio implements SPIFFE (X.509 SVID, SDS API) enabling cryptographic workload identity and interoperability with other SPIFFE-based systems. Linkerd uses a proprietary identity system. Consul implements SPIFFE with X.509 SVID support.
 
-**Decision Context**: 
+**Decision Context**:
 This decision prioritizes comprehensive Zero Trust capabilities and OPA integration over operational simplicity. For production deployments with strict resource constraints, Linkerd may warrant reconsideration. For multi-cloud or hybrid (VM + Kubernetes) architectures, Consul may be more appropriate.
 
 **Related Resources**:

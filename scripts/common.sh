@@ -11,19 +11,19 @@ get_token() {
       -d "username=$username" \
       -d "password=$password" \
       -d "grant_type=password")
-    
+
     if ! echo "$response" | jq -e . >/dev/null 2>&1; then
         echo "❌ Failed to get token" >&2
         return 1
     fi
-    
+
     local token=$(echo "$response" | jq -r '.access_token')
-    
+
     if [ -z "$token" ] || [ "$token" = "null" ]; then
         echo "❌ Failed to get token for $username" >&2
         return 1
     fi
-    
+
     echo "$token"
 }
 
@@ -43,12 +43,12 @@ decode_jwt() {
 
 detect_policy_set() {
     POLICIES=$(curl -s "$OPA_URL/v1/policies" | jq -r '.result[].id' 2>/dev/null || echo "")
-    
+
     if [ -z "$POLICIES" ]; then
         echo "none"
         return
     fi
-    
+
     if echo "$POLICIES" | grep -q "geofencing"; then
         echo "use-seven"
     elif echo "$POLICIES" | grep -q "time_based\|rebac"; then

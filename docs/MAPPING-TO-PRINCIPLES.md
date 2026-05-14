@@ -21,7 +21,7 @@ Client → Istio Gateway → Service Pod [Istio Sidecar + OPA Authorization] →
          ServiceEntry (resolves OPA service)
 ```
 
-**Test:** 
+**Test:**
 - Docker: `make compose-start && docker ps`
 - Kubernetes: `make k8s-deploy && kubectl get all -A`
 
@@ -42,17 +42,17 @@ kubectl exec <pod> -c istio-proxy -- curl localhost:15000/certs
 istioctl x describe pod <pod-name>
 ```
 
-**Test:** 
+**Test:**
 - Docker: `make compose-start` (Keycloak auto-configures users)
 - Kubernetes: `make k8s-deploy` (includes mTLS configuration)
 
 ## Principle 3: Assess user behaviour and service health
 **Implementation:**
-- **User behaviour:** 
+- **User behaviour:**
   - JWT claims include roles, username, subject ID
   - OPA decision logs capture user, path, method, allow/deny
   - Request patterns visible in Envoy/Istio access logs
-- **Service health:** 
+- **Service health:**
   - `/health` endpoints on all services (exempt from authentication)
   - Kubernetes liveness/readiness probes
   - Istio health checks
@@ -91,7 +91,7 @@ kubectl exec <pod> -c istio-proxy -- curl localhost:15000/stats
 - **Docker:** Envoy ext_authz filter calls OPA directly
 - **Kubernetes:** Istio AuthorizationPolicy CUSTOM delegates to OPA via ServiceEntry
 
-**Test:** 
+**Test:**
 ```bash
 # Docker Compose
 make compose-test  # Auto-detects loaded policies
@@ -102,27 +102,27 @@ make k8s-test      # Auto-detects loaded policies
 
 ## Principle 5: Authenticate & authorise everywhere
 **Implementation:**
-- **Authentication (Docker):** 
+- **Authentication (Docker):**
   - Envoy JWT validation on every request
   - JWKS URI: Keycloak public keys
   - Returns 401 for missing/invalid JWT
 
-- **Authentication (Kubernetes):** 
+- **Authentication (Kubernetes):**
   - Istio RequestAuthentication validates JWT format
   - JWKS URI: `http://keycloak.default.svc.cluster.local:8080/realms/demo/protocol/openid-connect/certs`
   - Sets `requestPrincipal` for downstream policies
 
-- **Authorization (Both):** 
+- **Authorization (Both):**
   - OPA ext_authz filter on every request
   - Returns 401 for missing JWT, 403 for insufficient permissions
   - No bypass: Services not exposed directly
 
-- **No trusted network:** 
+- **No trusted network:**
   - All requests validated regardless of source
   - Kubernetes NetworkPolicies (future enhancement)
 
-**Docker Config:** `envoy/go-service-envoy.yaml` filters  
-**Kubernetes Config:** 
+**Docker Config:** `envoy/go-service-envoy.yaml` filters
+**Kubernetes Config:**
 ```yaml
 RequestAuthentication: jwt-auth
 AuthorizationPolicy: delegate-to-opa
@@ -158,12 +158,12 @@ kubectl exec <pod> -c istio-proxy -- curl localhost:15000/config_dump | \
   - Service mesh observability
   - Distributed tracing ready (OpenTelemetry)
 
-- **Future:** 
+- **Future:**
   - Integrate with OpenTelemetry for full observability
   - Correlate OPA decisions with service traces
   - Grafana dashboards for authorization patterns
 
-**Monitor:** 
+**Monitor:**
 ```bash
 # Docker
 docker logs opa -f | grep Decision
@@ -203,7 +203,7 @@ kubectl logs -l app=opa -f | grep -i decision
   - Kubernetes: Istio automatic mTLS between services
   - External traffic: TLS at Istio Gateway (production: HTTPS ingress)
 
-- **Validation:** 
+- **Validation:**
   - JWT verified cryptographically (RSA signatures)
   - Not based on network position, source IP, or VPN
   - All services validate every request
@@ -225,33 +225,33 @@ kubectl exec <pod> -c istio-proxy -- curl localhost:15000/certs
 istioctl x describe pod <pod-name>
 ```
 
-**Note:** 
+**Note:**
 - ✅ **Kubernetes:** Full mTLS implemented via Istio
 - ⚠️ **Docker:** TLS termination only (mTLS between services not implemented)
 
 ## Principle 8: Choose services designed for zero trust
 **Implementation:**
-- **Envoy/Istio:** 
+- **Envoy/Istio:**
   - Built for zero trust architectures
   - JWT validation (RFC 7519)
   - ext_authz filter for external authorization
   - mTLS with certificate rotation (Istio)
   - SPIFFE/SPIRE identity framework (Istio)
 
-- **OPA:** 
+- **OPA:**
   - Policy-as-code (version controlled)
   - Testable policies (`make test-opa`)
   - Declarative Rego language
   - gRPC ext_authz API
   - Auditable decision logs
 
-- **Keycloak:** 
+- **Keycloak:**
   - Standards-based (OAuth2/OIDC, SAML)
   - JWT issuer with JWKS endpoint
   - Supports device flows, MFA, custom claims
   - Centralized identity management
 
-- **All services:** 
+- **All services:**
   - Stateless (12-factor apps)
   - Cloud-native (containerized)
   - Sidecar-compatible

@@ -23,12 +23,12 @@ test_opa() {
     local path=$3
     local method=$4
     local expected=$5
-    
+
     echo -n "  $test_name ... "
-    
+
     # Use new decode_jwt function that strips newlines
     JWT_JSON=$(decode_jwt "$token")
-    
+
     REQUEST=$(jq -n \
         --argjson jwt "$JWT_JSON" \
         --arg path "$path" \
@@ -52,11 +52,11 @@ test_opa() {
                 }
             }
         }')
-    
+
     RESULT=$(curl -s -X POST "$OPA_URL/v1/data/envoy/authz/allow" \
         -H "Content-Type: application/json" \
         -d "$REQUEST" | jq -r '.result')
-    
+
     if [ "$RESULT" = "$expected" ]; then
         echo "✅ $RESULT"
     else

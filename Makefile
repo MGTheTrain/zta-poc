@@ -39,6 +39,9 @@ help: ## Show this help
 	@echo ''
 	@echo 'Kubernetes targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^k8s-[a-zA-Z_-]+:.*?## \[K8s\]/ {printf "  \033[33m%-18s\033[0m %s\n", $$1, substr($$2, 7)}' $(MAKEFILE_LIST)
+	@echo ''
+	@echo 'Development:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## \[Development\]/ {printf "  \033[32m%-18s\033[0m %s\n", $$1, substr($$2, 15)}' $(MAKEFILE_LIST)
 
 # Common Targets (Both Docker Compose and Kubernetes)
 
@@ -125,3 +128,9 @@ k8s-use-one: ## [K8s] Use basic RBAC policies
 
 k8s-use-three: ## [K8s] Use RBAC + ReBAC + Time-based policies
 	@bash scripts/load-opa-policies.sh rbac-rebac-time k8s
+
+## Development
+
+.PHONY: lint
+lint: ## [Development] Run pre-commit hooks on specific files
+	pre-commit run --all-files

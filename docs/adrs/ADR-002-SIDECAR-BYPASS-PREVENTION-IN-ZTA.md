@@ -126,7 +126,7 @@ Single-layer defenses create exploitable gaps. An attacker who bypasses Network 
 
 **Attack Vector Coverage**:
 - **Network-level bypass** (direct pod-to-pod connection): Blocked by Network Policies
-- **Transport-level bypass** (no TLS certificate): Blocked by STRICT mTLS  
+- **Transport-level bypass** (no TLS certificate): Blocked by STRICT mTLS
 - **API-level bypass** (`kubectl exec`): Blocked by RBAC
 - **Combined attack** (all three): Requires compromising network isolation, obtaining valid certificates, AND having Kubernetes API permissions
 

@@ -28,21 +28,21 @@ case $POLICY_SET in
             --data-binary @$POLICY_DIR/rbac/authz.rego
         echo "✅ RBAC policy loaded"
         ;;
-        
+
     rbac-rebac-time|use-three)
         echo "📋 Loading RBAC + ReBAC + Time policies from $POLICY_DIR/rbac-rebac-time/..."
-        
+
         curl -s -X PUT "$OPA_URL/v1/policies/authz" \
             --data-binary @$POLICY_DIR/rbac-rebac-time/authz.rego
-        
+
         for policy in rbac rebac time_based; do
             curl -s -X PUT "$OPA_URL/v1/policies/$policy" \
                 --data-binary @$POLICY_DIR/rbac-rebac-time/$policy.rego
         done
-        
+
         echo "✅ RBAC + ReBAC + Time policies loaded"
         ;;
-        
+
     *)
         echo "❌ Unknown policy set: $POLICY_SET"
         echo "Usage: $0 [rbac|rbac-rebac-time] [docker|k8s]"

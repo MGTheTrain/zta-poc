@@ -45,7 +45,7 @@ make k8s-test
 make list-policies
 
 # Stop services and clear k8s resources
-make k8s-clean 
+make k8s-clean
 ```
 
 **Access Points (Docker Compose):**
@@ -147,29 +147,36 @@ make k8s-test      # Kubernetes
 ```bash
 Usage: make [target]
 
+  PROJECT_ROOT   = /Users/marvingajek/Documents/poc-repos/zta-poc
+  OPA_POLICY_SET = rbac-rebac-time
+
 Common targets (work for both):
   list-policies      List current policies
   open-keycloak      Open Keycloak in browser
   test-opa           Test OPA policies directly
 
 Docker Compose targets:
-  compose-build      Rebuild all services
+  compose-build      Rebuild all services (only the three backend services build locally; Envoy/Keycloak/OPA use upstream images)
   compose-start      Start all services
   compose-stop       Stop all services
   compose-restart    Restart all services
   compose-logs       Show logs
   compose-clean      Stop and remove everything
   compose-test       Run integration tests
-  compose-use-one    Use basic RBAC policies
-  compose-use-three  Use RBAC + ReBAC + Time-based policies
+  compose-use-one    Use basic RBAC policies (remounts policies/opa/rbac into OPA)
+  compose-use-three  Use RBAC + ReBAC + Time-based policies (remounts policies/opa/rbac-rebac-time into OPA)
 
 Kubernetes targets:
-  k8s-deploy         Deploy services with Istio
-  k8s-test           Test Kubernetes deployment
+  k8s-deploy         Deploy ZTA PoC umbrella chart on a kind cluster (Istio + zta-poc)
+  k8s-clean          Tear down the ZTA PoC and Istio (helm uninstall + namespace cleanup)
+  k8s-redeploy       Uninstall + install (full reset) ZTA PoC and Istio on a kind cluster
+  k8s-test           Run integration tests against the k8s deployment
   k8s-forward        Port-forward all services
-  k8s-clean          Cleanup Kind resources
   k8s-use-one        Use basic RBAC policies
   k8s-use-three      Use RBAC + ReBAC + Time-based policies
+
+Development:
+  lint               Run pre-commit hooks on specific files
 ```
 
 ## Key Features
@@ -202,7 +209,7 @@ Kubernetes targets:
 
 **No policies loaded?**
 ```bash
-make compose-use-three              # Docker Compose
+make compose-use-three      # Docker Compose
 make k8s-use-three          # Kubernetes
 make list-policies          # Check Docker or Kubernetes
 ```
@@ -212,12 +219,12 @@ make list-policies          # Check Docker or Kubernetes
 # Docker Compose
 docker logs opa --tail 50
 docker logs keycloak --tail 50
-make compose-clean && make compose-start
+make compose-restart
 
 # Kubernetes
 kubectl logs -l app=opa --tail=50
 kubectl logs -l app=keycloak --tail=50
-make k8s-clean && make k8s-deploy
+make k8s-redeploy
 ```
 
 **403 Forbidden?**
@@ -259,7 +266,7 @@ Edit `docker-compose.yml` port mappings
 
 ## Advanced ABAC (Future Enhancements)
 
-**Currently Implemented & Tested:** 
+**Currently Implemented & Tested:**
 - Time-based access control (business hours)
 - Resource-based access (ReBAC - user ownership)
 - Role-based access control (RBAC)
@@ -273,7 +280,7 @@ Edit `docker-compose.yml` port mappings
 - Geofencing - Needs IP geolocation API
 - Custom JWT claims - Needs Keycloak user mappers
 
-**See:** 
+**See:**
 - [Advanced rego policy implementations](policies/opa/advanced/)
 - [Advanced ABAC Examples](docs/ABAC-EXAMPLES.md)
 
@@ -309,7 +316,7 @@ This PoC demonstrates production-ready patterns:
 
 ### Production Deployment
 - **Cloud/On-prem:** Deploy on managed/self-hosted Kubernetes
-- **Best practices:** 
+- **Best practices:**
   - Enable mTLS between services
   - Use cert-manager for certificate rotation
   - Persistent storage for Keycloak

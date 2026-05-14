@@ -55,7 +55,7 @@ service:
   port: 8080
   targetPort: 8080
 
-containerPort: 8080 
+containerPort: 8080
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:

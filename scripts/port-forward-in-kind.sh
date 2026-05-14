@@ -78,7 +78,7 @@ if [ "$FORWARD_SVC" = true ]; then
     echo "  Python Service: curl -H 'Host: python-service.local' http://localhost:8080/api/data"
     echo "  C# Service:     curl -H 'Host: csharp-service.local' http://localhost:8080/api/data"
     echo ""
-    
+
     kubectl port-forward -n istio-ingress svc/istio-ingressgateway 8080:80 &
 fi
 
