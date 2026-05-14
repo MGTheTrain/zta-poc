@@ -21,6 +21,12 @@ else
     POLICY_DIR="policies/opa"
 fi
 
+# First enumerate all policies and delete every one before pushing the new set
+existing=$(curl -s "${OPA_URL}/v1/policies" | jq -r '.result[].id' 2>/dev/null || true)
+for id in $existing; do
+    curl -sf -X DELETE "${OPA_URL}/v1/policies/${id}" >/dev/null 2>&1 || true
+done
+
 case $POLICY_SET in
     rbac|use-one)
         echo "📋 Loading RBAC-only policies from $POLICY_DIR/rbac/..."
