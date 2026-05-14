@@ -36,13 +36,21 @@ jobs:
         if: inputs.runtime == 'compose'
         run: make compose-start
 
-      - name: Load RBAC + ReBAC + Time policies (compose)
-        if: inputs.runtime == 'compose'
-        run: make compose-use-three
-
       - name: Wait for stack
         if: inputs.runtime == 'compose'
         run: make wait-healthy
+
+      - name: Load RBAC policy (compose)
+        if: inputs.runtime == 'compose'
+        run: make compose-use-one
+
+      - name: Run tests (compose)
+        if: inputs.runtime == 'compose'
+        run: make compose-test
+
+      - name: Load RBAC + ReBAC + Time policies (compose)
+        if: inputs.runtime == 'compose'
+        run: make compose-use-three
 
       - name: Run tests (compose)
         if: inputs.runtime == 'compose'
@@ -67,13 +75,21 @@ jobs:
         if: inputs.runtime == 'k8s'
         run: make k8s-forward-bg
 
-      - name: Load RBAC + ReBAC + Time policies (k8s)
-        if: inputs.runtime == 'k8s'
-        run: make k8s-use-three
-
       - name: Wait for stack
         if: inputs.runtime == 'k8s'
         run: make wait-healthy
+
+      - name: Load RBAC policy (k8s)
+        if: inputs.runtime == 'k8s'
+        run: make k8s-use-one
+
+      - name: Run tests (k8s)
+        if: inputs.runtime == 'k8s'
+        run: make k8s-test
+
+      - name: Load RBAC + ReBAC + Time policies (k8s)
+        if: inputs.runtime == 'k8s'
+        run: make k8s-use-three
 
       - name: Run tests (k8s)
         if: inputs.runtime == 'k8s'
