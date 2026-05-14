@@ -20,10 +20,7 @@ COMPOSE      := docker compose -f $(COMPOSE_FILE)
 
 UMBRELLA_CHART := ./infra/helm-charts/zta-poc
 
-.PHONY: help compose-build compose-start compose-stop compose-restart compose-logs compose-clean compose-test \
-        compose-use-one compose-use-three \
-        open-keycloak list-policies test-opa \
-        k8s-deploy k8s-test k8s-clean k8s-forward k8s-use-one k8s-use-three
+PYTEST ?= pytest
 
 help: ## Show this help
 	@echo 'Usage: make [target]'
@@ -54,7 +51,7 @@ open-keycloak: ## [Common] Open Keycloak in browser
 	@open http://localhost:8180 2>/dev/null || xdg-open http://localhost:8180 2>/dev/null || echo "Open http://localhost:8180"
 
 test-opa: ## [Common] Test OPA policies directly
-	@bash scripts/test-opa-policy.sh
+	$(PYTEST) tests/test_opa_policies.py
 
 # Docker Compose Targets
 
@@ -92,8 +89,8 @@ compose-clean: ## [Compose] Stop and remove everything
 	@$(COMPOSE) down -v
 	@docker system prune -f
 
-compose-test: ## [Compose] Run integration tests
-	@bash scripts/test-internal-services.sh docker
+compose-test: ## [Compose] Run service + OPA policy tests against the compose stack
+	$(PYTEST) tests/ --env=docker
 
 compose-use-one: ## [Compose] Use basic RBAC policies (remounts policies/opa/rbac into OPA)
 	@echo " Switching OPA to policies/opa/rbac ..."
@@ -117,8 +114,9 @@ k8s-redeploy: ## [K8s] Uninstall + install (full reset) ZTA PoC and Istio on a k
 	@bash scripts/cleanup-kind.sh
 	@bash scripts/deploy-to-kind.sh
 
-k8s-test: ## [K8s] Run integration tests against the k8s deployment
-	@bash scripts/test-internal-services.sh k8s
+k8s-test: ## [K8s] Run service + OPA policy tests against the k8s deployment
+	@echo " Note: this assumes 'make k8s-forward' is running in another terminal"
+	$(PYTEST) tests/ --env=k8s
 
 k8s-forward: ## [K8s] Port-forward all services
 	@bash scripts/port-forward-in-kind.sh --all
