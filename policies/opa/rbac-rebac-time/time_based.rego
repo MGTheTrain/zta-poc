@@ -14,7 +14,7 @@ allowed {
 
     # Check business hours
     hour >= 9
-    hour < 17
+    hour < 23
 
     # Check weekday (0=Sunday, 1=Monday, ..., 6=Saturday)
     weekday := time.weekday([now, "UTC"])

@@ -23,7 +23,7 @@ allowed {
     now := time.now_ns()
     [hour, _, _] := time.clock([now, "UTC"])
     hour >= 9
-    hour < 17
+    hour < 23
     weekday := time.weekday([now, "UTC"])
     weekday != "Saturday"
     weekday != "Sunday"
