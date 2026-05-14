@@ -45,11 +45,12 @@ services:
 
   # Policy Engine (OPA)
   opa:
-    image: openpolicyagent/opa:0.60.0-envoy
+    image: openpolicyagent/opa:1.16.2-envoy-static
     container_name: opa
     command:
       - "run"
       - "--server"
+      - "--v0-compatible"
       - "--log-level=debug"
       - "--set=plugins.envoy_ext_authz_grpc.addr=:9191"
       - "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow"

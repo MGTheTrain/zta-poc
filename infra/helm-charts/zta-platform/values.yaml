@@ -6,7 +6,7 @@ opa:
   policySet: rbac-rebac-time        # rbac | rbac-rebac-time | advanced
   image:
     repository: openpolicyagent/opa
-    tag: 0.60.0-envoy
+    tag: 1.16.2-envoy-static
     pullPolicy: IfNotPresent
   httpPort: 8181
   grpcPort: 9191
