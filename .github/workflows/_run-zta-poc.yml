@@ -1,0 +1,116 @@
+name: Run ZTA PoC
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+      label:
+        required: true
+        type: string
+      runtime:
+        required: true
+        type: string
+        description: "compose | k8s"
+
+jobs:
+  test:
+    runs-on: ${{ inputs.runner }}
+    name: ${{ inputs.label }}
+    timeout-minutes: 30
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest deps
+        run: pip install pytest requests
+
+      # ── Compose path ──────────────────────────────────────────────
+      - name: Start stack (compose)
+        if: inputs.runtime == 'compose'
+        run: make compose-start
+
+      - name: Load RBAC + ReBAC + Time policies (compose)
+        if: inputs.runtime == 'compose'
+        run: make compose-use-three
+
+      - name: Run tests (compose)
+        if: inputs.runtime == 'compose'
+        run: make compose-test
+
+      # ── k8s path ──────────────────────────────────────────────────
+      - name: Set up kind cluster
+        if: inputs.runtime == 'k8s'
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
+
+      - name: Install Helm
+        if: inputs.runtime == 'k8s'
+        uses: azure/setup-helm@v4
+
+      - name: Deploy to kind
+        if: inputs.runtime == 'k8s'
+        run: make k8s-deploy
+
+      - name: Start port-forwards in background
+        if: inputs.runtime == 'k8s'
+        run: |
+          nohup bash scripts/port-forward-in-kind.sh --all > /tmp/pf.log 2>&1 &
+          # Wait for OPA + Keycloak + gateway to answer
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8181/health >/dev/null && \
+               curl -sf http://localhost:8180/health/ready >/dev/null && \
+               curl -sf -o /dev/null -w '%{http_code}' http://localhost:8080/health \
+                 -H 'Host: go-service.local' | grep -q 200; then
+              echo "  ✓ port-forwards ready"; exit 0
+            fi
+            echo "  [$i] waiting for port-forwards..."; sleep 2
+          done
+          echo "port-forwards did not come up"; cat /tmp/pf.log; exit 1
+
+      - name: Load RBAC + ReBAC + Time policies (k8s)
+        if: inputs.runtime == 'k8s'
+        run: make k8s-use-three
+
+      - name: Run tests (k8s)
+        if: inputs.runtime == 'k8s'
+        run: make k8s-test
+
+      # ── Diagnostics ───────────────────────────────────────────────
+      - name: Dump logs on failure (compose)
+        if: failure() && inputs.runtime == 'compose'
+        run: |
+          for svc in keycloak opa go-service python-service csharp-service \
+                     go-service-envoy python-service-envoy csharp-service-envoy; do
+            echo "=== $svc ===" && docker compose -f infra/compose/docker-compose.yml \
+              logs --tail=200 $svc 2>/dev/null || true
+          done
+
+      - name: Dump logs on failure (k8s)
+        if: failure() && inputs.runtime == 'k8s'
+        run: |
+          echo "=== Pods ==="
+          kubectl get pods -A -o wide
+          echo "=== Events ==="
+          kubectl get events -A --sort-by=.lastTimestamp | tail -50
+          for deploy in opa keycloak go-service python-service csharp-service; do
+            echo "=== $deploy ==="
+            kubectl -n default logs deploy/$deploy --tail=200 2>/dev/null || true
+            kubectl -n default logs deploy/$deploy -c istio-proxy --tail=100 2>/dev/null || true
+          done
+
+      # ── Tear down ─────────────────────────────────────────────────
+      - name: Tear down (compose)
+        if: always() && inputs.runtime == 'compose'
+        run: make compose-clean
+
+      - name: Tear down (k8s)
+        if: always() && inputs.runtime == 'k8s'
+        run: make k8s-clean
