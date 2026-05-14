@@ -5,6 +5,7 @@ Pure functions that mirror what scripts/common.sh used to expose to the
 bash tests. They don't depend on pytest, so anything in here can be
 reused from a python REPL or imported by ad-hoc scripts.
 """
+
 from __future__ import annotations
 
 import base64

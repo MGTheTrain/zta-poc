@@ -7,6 +7,7 @@ Mirrors the original test-internal-services.sh, but each old "for svc
 in go python csharp" loop is now a parametrized test that produces a
 separate pytest result per service.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -38,7 +39,9 @@ def _call(
     if token:
         headers["Authorization"] = f"Bearer {token}"
     # allow_redirects=False so a 302 doesn't masquerade as a 200.
-    resp = requests.request(method, url, headers=headers, allow_redirects=False, timeout=5)
+    resp = requests.request(
+        method, url, headers=headers, allow_redirects=False, timeout=5
+    )
     return resp.status_code
 
 

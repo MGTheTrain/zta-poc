@@ -9,6 +9,7 @@ is the data path, not the policy.
 
 Mirrors test-opa-policy.sh.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -24,10 +25,10 @@ from helpers import Endpoints, opa_decide
 @pytest.mark.parametrize(
     ("user_fixture", "path", "method", "expected"),
     [
-        ("alice_token", "/api/data",    "GET",  True),
-        ("bob_token",   "/api/data",    "GET",  True),
-        ("bob_token",   "/api/data",    "POST", False),
-        ("bob_token",   "/admin/users", "GET",  False),
+        ("alice_token", "/api/data", "GET", True),
+        ("bob_token", "/api/data", "GET", True),
+        ("bob_token", "/api/data", "POST", False),
+        ("bob_token", "/admin/users", "GET", False),
     ],
     ids=[
         "alice-admin-can-GET-api",

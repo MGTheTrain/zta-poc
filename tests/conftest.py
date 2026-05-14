@@ -4,6 +4,7 @@ Pytest configuration shared by all test modules.
 Adds a --env command-line option (docker | k8s) and exposes session-scoped
 fixtures for endpoints, tokens, user IDs, and the detected policy set.
 """
+
 from __future__ import annotations
 
 import pytest
