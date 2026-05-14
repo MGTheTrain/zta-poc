@@ -93,14 +93,10 @@ compose-test: ## [Compose] Run service + OPA policy tests against the compose st
 	$(PYTEST) tests/ --env=docker
 
 compose-use-one: ## [Compose] Use basic RBAC policies (remounts policies/opa/rbac into OPA)
-	@echo " Switching OPA to policies/opa/rbac ..."
-	@OPA_POLICY_SET=rbac $(COMPOSE) up -d --no-deps --force-recreate opa
-	@echo " OPA now serving the 'rbac' policy set"
+	@bash scripts/load-opa-policies.sh rbac docker
 
 compose-use-three: ## [Compose] Use RBAC + ReBAC + Time-based policies (remounts policies/opa/rbac-rebac-time into OPA)
-	@echo " Switching OPA to policies/opa/rbac-rebac-time ..."
-	@OPA_POLICY_SET=rbac-rebac-time $(COMPOSE) up -d --no-deps --force-recreate opa
-	@echo " OPA now serving the 'rbac-rebac-time' policy set"
+	@bash scripts/load-opa-policies.sh rbac-rebac-time docker
 
 # Kubernetes Targets
 
