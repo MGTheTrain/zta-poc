@@ -53,6 +53,19 @@ open-keycloak: ## [Common] Open Keycloak in browser
 test-opa: ## [Common] Test OPA policies directly
 	$(PYTEST) tests/test_opa_policies.py
 
+wait-healthy: ## [Common] Block until Keycloak + OPA + at least one service answer (max 120s)
+	@echo " Waiting for stack to be healthy..."
+	@for i in $$(seq 1 60); do \
+	  kc=$$(curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8180/realms/demo 2>/dev/null || echo 000); \
+	  opa=$$(curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8181/v1/policies 2>/dev/null || echo 000); \
+	  echo "  [$$i] keycloak=$$kc opa=$$opa"; \
+	  if [ "$$kc" = "200" ] && [ "$$opa" = "200" ]; then \
+	    echo " ✓ stack is healthy"; exit 0; \
+	  fi; \
+	  sleep 2; \
+	done; \
+	echo " ✗ stack did not become healthy in 120s"; exit 1
+
 # Docker Compose Targets
 
 compose-build: ## [Compose] Rebuild all services (only the three backend services build locally; Envoy/Keycloak/OPA use upstream images)
@@ -116,6 +129,13 @@ k8s-test: ## [K8s] Run service + OPA policy tests against the k8s deployment
 
 k8s-forward: ## [K8s] Port-forward all services
 	@bash scripts/port-forward-in-kind.sh --all
+
+k8s-forward-bg: ## [K8s] Same, but background — writes PID to /tmp/zta-pf.pid
+	@bash scripts/port-forward-in-kind.sh --all > /tmp/zta-pf.log 2>&1 & echo $$! > /tmp/zta-pf.pid
+	@echo " Port-forwards started in background (PID $$(cat /tmp/zta-pf.pid))"
+
+k8s-forward-stop: ## [K8s] Kill the background port-forwards
+	@if [ -f /tmp/zta-pf.pid ]; then kill $$(cat /tmp/zta-pf.pid) 2>/dev/null || true; rm -f /tmp/zta-pf.pid; fi
 
 k8s-use-one: ## [K8s] Use basic RBAC policies
 	@bash scripts/load-opa-policies.sh rbac k8s

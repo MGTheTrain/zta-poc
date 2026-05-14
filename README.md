@@ -154,6 +154,7 @@ Common targets (work for both):
   list-policies      List current policies
   open-keycloak      Open Keycloak in browser
   test-opa           Test OPA policies directly
+  wait-healthy       Block until Keycloak + OPA + at least one service answer (max 120s)
 
 Docker Compose targets:
   compose-build      Rebuild all services (only the three backend services build locally; Envoy/Keycloak/OPA use upstream images)
@@ -162,7 +163,7 @@ Docker Compose targets:
   compose-restart    Restart all services
   compose-logs       Show logs
   compose-clean      Stop and remove everything
-  compose-test       Run integration tests
+  compose-test       Run service + OPA policy tests against the compose stack
   compose-use-one    Use basic RBAC policies (remounts policies/opa/rbac into OPA)
   compose-use-three  Use RBAC + ReBAC + Time-based policies (remounts policies/opa/rbac-rebac-time into OPA)
 
@@ -170,8 +171,10 @@ Kubernetes targets:
   k8s-deploy         Deploy ZTA PoC umbrella chart on a kind cluster (Istio + zta-poc)
   k8s-clean          Tear down the ZTA PoC and Istio (helm uninstall + namespace cleanup)
   k8s-redeploy       Uninstall + install (full reset) ZTA PoC and Istio on a kind cluster
-  k8s-test           Run integration tests against the k8s deployment
+  k8s-test           Run service + OPA policy tests against the k8s deployment
   k8s-forward        Port-forward all services
+  k8s-forward-bg     Same, but background — writes PID to /tmp/zta-pf.pid
+  k8s-forward-stop   Kill the background port-forwards
   k8s-use-one        Use basic RBAC policies
   k8s-use-three      Use RBAC + ReBAC + Time-based policies
 

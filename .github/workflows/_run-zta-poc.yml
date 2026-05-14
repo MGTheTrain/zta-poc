@@ -40,6 +40,10 @@ jobs:
         if: inputs.runtime == 'compose'
         run: make compose-use-three
 
+      - name: Wait for stack
+        if: inputs.runtime == 'compose'
+        run: make wait-healthy
+
       - name: Run tests (compose)
         if: inputs.runtime == 'compose'
         run: make compose-test
@@ -59,31 +63,17 @@ jobs:
         if: inputs.runtime == 'k8s'
         run: make k8s-deploy
 
-      - name: Start port-forwards in background
+      - name: Start port-forwards
         if: inputs.runtime == 'k8s'
-        run: |
-          nohup bash scripts/port-forward-in-kind.sh --all > /tmp/pf.log 2>&1 &
-          for i in $(seq 1 60); do
-            # OPA: the data API answers on /v1/policies (200 even with no policies)
-            opa_ok=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8181/v1/policies)
-            # Keycloak: realm endpoint is up once realm import finishes
-            kc_ok=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8180/realms/demo)
-            # Gateway: any 401/200/403 from a service means routing works
-            gw_ok=$(curl -s -o /dev/null -w '%{http_code}' \
-                      -H 'Host: go-service.local' http://localhost:8080/)
-            echo "  [$i] opa=$opa_ok kc=$kc_ok gw=$gw_ok"
-            if [[ "$opa_ok" == "200" && "$kc_ok" == "200" && "$gw_ok" =~ ^(200|401|403)$ ]]; then
-              echo "  ✓ port-forwards ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "port-forwards did not come up"; cat /tmp/pf.log
-          kubectl get pods -A
-          exit 1
+        run: make k8s-forward-bg
 
       - name: Load RBAC + ReBAC + Time policies (k8s)
         if: inputs.runtime == 'k8s'
         run: make k8s-use-three
+
+      - name: Wait for stack
+        if: inputs.runtime == 'k8s'
+        run: make wait-healthy
 
       - name: Run tests (k8s)
         if: inputs.runtime == 'k8s'
@@ -119,4 +109,6 @@ jobs:
 
       - name: Tear down (k8s)
         if: always() && inputs.runtime == 'k8s'
-        run: make k8s-clean
+        run: |
+          make k8s-forward-stop
+          make k8s-clean
