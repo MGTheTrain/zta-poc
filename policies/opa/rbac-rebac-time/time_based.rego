@@ -18,8 +18,8 @@ allowed {
 
     # Check weekday (0=Sunday, 1=Monday, ..., 6=Saturday)
     weekday := time.weekday([now, "UTC"])
-    weekday != "Saturday"
-    weekday != "Sunday"
+    # weekday != "Saturday"
+    # weekday != "Sunday"
 }
 
 # Admins bypass time restrictions

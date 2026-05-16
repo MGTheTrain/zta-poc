@@ -25,8 +25,8 @@ allowed {
     hour >= 9
     hour < 23
     weekday := time.weekday([now, "UTC"])
-    weekday != "Saturday"
-    weekday != "Sunday"
+    # weekday != "Saturday"
+    # weekday != "Sunday"
 }
 
 # Admins bypass time restrictions
