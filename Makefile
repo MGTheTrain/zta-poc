@@ -18,8 +18,6 @@ export OPA_POLICY_SET ?= rbac-rebac-time
 COMPOSE_FILE := infra/compose/docker-compose.yml
 COMPOSE      := docker compose -f $(COMPOSE_FILE)
 
-UMBRELLA_CHART := ./infra/helm-charts/zta-poc
-
 PYTEST ?= pytest
 
 help: ## Show this help
