@@ -5,9 +5,8 @@
 # Pipeline:
 #   1. Install Istio (three releases, see ADR for why they stay separate)
 #   2. Label default namespace for sidecar injection
-#   3. Build the three service images and `kind load` them
-#   4. Stage the policy + realm files into the umbrella chart's files/
-#   5. `helm upgrade --install zta-poc` — does everything else
+#   3. Stage the policy + realm files into the umbrella chart's files/
+#   4. `helm upgrade --install zta-poc` — does everything else
 #
 # Previously this script was ~400 lines of inline kubectl/heredoc YAML.
 # Most of that is now declarative in infra/helm-charts/zta-poc/.
