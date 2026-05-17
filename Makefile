@@ -15,7 +15,7 @@ SHELL       := /usr/bin/env bash
 export PROJECT_ROOT   ?= $(CURDIR)
 export OPA_POLICY_SET ?= rbac-rebac-time
 
-COMPOSE_FILE := infra/compose/docker-compose.yml
+COMPOSE_FILE ?= infra/compose/docker-compose.yml
 COMPOSE      := docker compose -f $(COMPOSE_FILE)
 
 PYTEST ?= pytest

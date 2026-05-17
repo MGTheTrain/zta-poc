@@ -61,9 +61,9 @@ go-service:
   # destination.host: go-service.
   fullnameOverride: go-service
   image:
-    repository: zta-poc-go-service
+    repository: mgthetrain987/zta-poc-go-service
     tag: latest
-    pullPolicy: Never
+    pullPolicy: IfNotPresent
   service:
     port: 8080
     targetPort: 8080
@@ -78,9 +78,9 @@ python-service:
   enabled: true
   fullnameOverride: python-service
   image:
-    repository: zta-poc-python-service
+    repository: mgthetrain987/zta-poc-python-service
     tag: latest
-    pullPolicy: Never
+    pullPolicy: IfNotPresent
   service:
     port: 8080
     targetPort: 8080
@@ -95,9 +95,9 @@ csharp-service:
   enabled: true
   fullnameOverride: csharp-service
   image:
-    repository: zta-poc-csharp-service
+    repository: mgthetrain987/zta-poc-csharp-service
     tag: latest
-    pullPolicy: Never
+    pullPolicy: IfNotPresent
   service:
     port: 8080
     targetPort: 8080

@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 30
     env:
       PROJECT_ROOT: ${{ github.workspace }}
+      COMPOSE_FILE: infra/compose/docker-compose.ci.yml
     steps:
       - uses: actions/checkout@v6
 

@@ -4,7 +4,7 @@ import input.attributes.metadataContext.filterMetadata["envoy.filters.http.jwt_a
 
 default allowed = false
 
-# Business hours: Mon-Fri 9am-5pm UTC
+# Business hours: Mon-Fri 7am-11pm UTC
 allowed {
     # Get current time
     now := time.now_ns()
@@ -13,7 +13,7 @@ allowed {
     [hour, _, _] := time.clock([now, "UTC"])
 
     # Check business hours
-    hour >= 9
+    hour >= 7
     hour < 23
 
     # Check weekday (0=Sunday, 1=Monday, ..., 6=Saturday)

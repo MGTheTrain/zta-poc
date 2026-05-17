@@ -69,33 +69,14 @@ kubectl label namespace default istio-injection=enabled --overwrite >/dev/null
 echo -e "${GREEN}✓ Namespace labeled${NC}"
 echo ""
 
-# ─── 3. Build + kind-load service images ────────────────────────────────────
-echo -e "${YELLOW}📦 Building and loading service images...${NC}"
-for service in "${SERVICES[@]}"; do
-    IMAGE="zta-poc-${service}:latest"
-    if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
-        echo -e "${BLUE}  Building ${IMAGE}...${NC}"
-        docker build -t "${IMAGE}" \
-            -f "services/${service}/Dockerfile" \
-            "services/${service}" >/dev/null
-    fi
-    if ! docker exec "${CLUSTER_NAME}-control-plane" crictl images 2>/dev/null \
-            | grep -q "zta-poc-${service}"; then
-        echo -e "${BLUE}  Loading ${IMAGE} into kind...${NC}"
-        kind load docker-image "${IMAGE}" --name "${CLUSTER_NAME}" >/dev/null
-    fi
-done
-echo -e "${GREEN}✓ Images ready${NC}"
-echo ""
-
-# ─── 4. Stage chart files ──────────────────────────────────────────────────
+# ─── 3. Stage chart files ──────────────────────────────────────────────────
 # Helm's Files.Glob only reads inside the chart directory, so we copy the
 # policy + realm sources into the chart's files/ before running helm.
 # Same pattern rucio-storage-testbed uses.
 bash scripts/stage-chart-files.sh
 echo ""
 
-# ─── 5. Helm install the umbrella ──────────────────────────────────────────
+# ─── 4. Helm install the umbrella ──────────────────────────────────────────
 echo -e "${YELLOW}⎈ Installing zta-poc umbrella chart...${NC}"
 echo -e "${BLUE}  Policy set: ${POLICY_SET}${NC}"
 

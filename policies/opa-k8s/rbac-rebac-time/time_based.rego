@@ -18,11 +18,11 @@ jwt_payload := {} {
 
 default allowed = false
 
-# Business hours: Mon-Fri 9am-5pm UTC
+# Business hours: Mon-Fri 7am-11pm UTC
 allowed {
     now := time.now_ns()
     [hour, _, _] := time.clock([now, "UTC"])
-    hour >= 9
+    hour >= 7
     hour < 23
     weekday := time.weekday([now, "UTC"])
     # weekday != "Saturday"
