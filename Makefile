@@ -63,7 +63,7 @@ ifeq ($(RUNTIME),compose)
 	@echo " Starting Zero Trust Architecture PoC..."
 	@echo "   PROJECT_ROOT=$(PROJECT_ROOT)"
 	@echo "   OPA_POLICY_SET=$(OPA_POLICY_SET)"
-	@$(COMPOSE) up -d
+	@$(COMPOSE) up -d --build
 	@echo " Waiting for services to be healthy..."
 	@$(MAKE) -s wait-healthy
 	@echo ""
