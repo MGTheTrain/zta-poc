@@ -19,9 +19,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-CLUSTER_NAME="kind"
-SERVICES=("go-service" "python-service" "csharp-service")
-
 # Versions
 ISTIO_VERSION="1.24.2"
 ISTIO_GATEWAY_VERSION="1.28.1"

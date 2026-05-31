@@ -2,7 +2,7 @@
 set -e
 
 POLICY_SET=${1:-rbac}
-ENVIRONMENT=${2:-docker}  # docker or k8s
+ENVIRONMENT=${2:-docker} # docker or k8s
 OPA_URL="http://localhost:8181"
 
 echo "🔄 Loading OPA policies: $POLICY_SET ($ENVIRONMENT)"
@@ -28,32 +28,32 @@ for id in $existing; do
 done
 
 case $POLICY_SET in
-    rbac|use-one)
-        echo "📋 Loading RBAC-only policies from $POLICY_DIR/rbac/..."
-        curl -s -X PUT "$OPA_URL/v1/policies/authz" \
-            --data-binary @$POLICY_DIR/rbac/authz.rego
-        echo "✅ RBAC policy loaded"
-        ;;
+rbac | use-one)
+    echo "📋 Loading RBAC-only policies from $POLICY_DIR/rbac/..."
+    curl -s -X PUT "$OPA_URL/v1/policies/authz" \
+        --data-binary @$POLICY_DIR/rbac/authz.rego
+    echo "✅ RBAC policy loaded"
+    ;;
 
-    rbac-rebac-time|use-three)
-        echo "📋 Loading RBAC + ReBAC + Time policies from $POLICY_DIR/rbac-rebac-time/..."
+rbac-rebac-time | use-three)
+    echo "📋 Loading RBAC + ReBAC + Time policies from $POLICY_DIR/rbac-rebac-time/..."
 
-        curl -s -X PUT "$OPA_URL/v1/policies/authz" \
-            --data-binary @$POLICY_DIR/rbac-rebac-time/authz.rego
+    curl -s -X PUT "$OPA_URL/v1/policies/authz" \
+        --data-binary @$POLICY_DIR/rbac-rebac-time/authz.rego
 
-        for policy in rbac rebac time_based; do
-            curl -s -X PUT "$OPA_URL/v1/policies/$policy" \
-                --data-binary @$POLICY_DIR/rbac-rebac-time/$policy.rego
-        done
+    for policy in rbac rebac time_based; do
+        curl -s -X PUT "$OPA_URL/v1/policies/$policy" \
+            --data-binary @$POLICY_DIR/rbac-rebac-time/$policy.rego
+    done
 
-        echo "✅ RBAC + ReBAC + Time policies loaded"
-        ;;
+    echo "✅ RBAC + ReBAC + Time policies loaded"
+    ;;
 
-    *)
-        echo "❌ Unknown policy set: $POLICY_SET"
-        echo "Usage: $0 [rbac|rbac-rebac-time] [docker|k8s]"
-        exit 1
-        ;;
+*)
+    echo "❌ Unknown policy set: $POLICY_SET"
+    echo "Usage: $0 [rbac|rbac-rebac-time] [docker|k8s]"
+    exit 1
+    ;;
 esac
 
 echo ""

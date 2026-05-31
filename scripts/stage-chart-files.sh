@@ -42,7 +42,7 @@ echo -e "${YELLOW}📂 Staging chart files into ${PLATFORM_CHART}/files/...${NC}
 for set in rbac rbac-rebac-time advanced; do
     if [ -d "policies/opa-k8s/${set}" ]; then
         stage_files "policies/opa-k8s/${set}" \
-                    "${PLATFORM_CHART}/files/opa-policies/${set}"
+            "${PLATFORM_CHART}/files/opa-policies/${set}"
     fi
 done
 

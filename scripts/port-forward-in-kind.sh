@@ -8,29 +8,29 @@ FORWARD_SVC=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --iam)
-            FORWARD_IAM=true
-            shift
-            ;;
-        --opa)
-            FORWARD_OPA=true
-            shift
-            ;;
-        --svc|--services)
-            FORWARD_SVC=true
-            shift
-            ;;
-        --all)
-            FORWARD_IAM=true
-            FORWARD_OPA=true
-            FORWARD_SVC=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Usage: $0 [--iam] [--opa] [--svc|--services] [--all]"
-            exit 1
-            ;;
+    --iam)
+        FORWARD_IAM=true
+        shift
+        ;;
+    --opa)
+        FORWARD_OPA=true
+        shift
+        ;;
+    --svc | --services)
+        FORWARD_SVC=true
+        shift
+        ;;
+    --all)
+        FORWARD_IAM=true
+        FORWARD_OPA=true
+        FORWARD_SVC=true
+        shift
+        ;;
+    *)
+        echo "Unknown option: $1"
+        echo "Usage: $0 [--iam] [--opa] [--svc|--services] [--all]"
+        exit 1
+        ;;
     esac
 done
 
