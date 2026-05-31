@@ -17,8 +17,8 @@ For policy detail, see [POLICIES.md](POLICIES.md).
   `opa-ext-authz-grpc.local` to `opa.default.svc.cluster.local:9191`.
 
 **Smoke checks:**
-- Compose: `make compose-start && docker compose -f infra/compose/docker-compose.yml ps`
-- Kubernetes: `make k8s-deploy && kubectl get all -A`
+- Compose: `export RUNTIME=docker && make start && docker compose -f infra/compose/docker-compose.yml ps`
+- Kubernetes: `export RUNTIME=k8s && make start && kubectl get all -A`
 
 ## Principle 2 — Know your identities
 
@@ -75,12 +75,12 @@ Policy detail and authorization matrix: [POLICIES.md](POLICIES.md).
 
 | Set | Compose target | k8s target | Rules |
 |---|---|---|---|
-| RBAC | `make compose-use-one` | `make k8s-use-one` | Admin: all. User: GET-only, no `/admin`. Anonymous: 401. |
-| RBAC + ReBAC + Time | `make compose-use-three` | `make k8s-use-three` | + Users may only access `/users/{their-sub}/*`. + Business hours (Mon-Fri 09–17 UTC). Admins bypass. |
+| RBAC | `make use-one` | `make use-one` | Admin: all. User: GET-only, no `/admin`. Anonymous: 401. |
+| RBAC + ReBAC + Time | `make use-three` | `make use-three` | + Users may only access `/users/{their-sub}/*`. + Business hours (Mon-Fri 09–17 UTC). Admins bypass. |
 
 ```bash
-make compose-test           # runs pytest against compose
-make k8s-test               # runs pytest against k8s
+make test           # runs pytest against compose
+make test               # runs pytest against k8s
 make test-opa               # OPA-direct policy tests (no service layer)
 ```
 

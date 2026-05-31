@@ -12,59 +12,54 @@ Tracked future improvements and planned work items are maintained in [BACKLOG.md
 
 ### Docker Compose
 ```bash
-make compose-start
-make compose-use-three   # or compose-use-one
-make compose-test
-make compose-clean
+export RUNTIME=docker
+
+make start
+make use-three   # or use-one
+make test
+make stop
 ```
 
 ### Kubernetes (kind)
 ```bash
-make k8s-deploy
-make k8s-forward          # in another terminal
-make k8s-use-three        # or k8s-use-one
-make k8s-test
-make k8s-clean
+export RUNTIME=k8s
+
+make start
+make forward          # in another terminal
+make use-three        # or use-one
+make test
+make stop
 ```
 
 ### Make targets
 
 ```bash
-Usage: make [target]
+Zero Trust Architecture PoC
 
   PROJECT_ROOT   = /Users/marvingajek/Documents/poc-repos/zta-poc
   OPA_POLICY_SET = rbac-rebac-time
+  RUNTIME        = compose
 
-Common targets (work for both):
-  list-policies      List current policies
-  open-keycloak      Open Keycloak in browser
-  test-opa           Test OPA policies directly
-  wait-healthy       Block until Keycloak + OPA + at least one service answer (max 120s)
+Usage:
+  make <target> [RUNTIME=compose|k8s]
 
-Docker Compose targets:
-  compose-build      Rebuild all services (only the three backend services build locally; Envoy/Keycloak/OPA use upstream images)
-  compose-start      Start all services
-  compose-stop       Stop all services
-  compose-restart    Restart all services
-  compose-logs       Show logs
-  compose-clean      Stop and remove everything
-  compose-test       Run service + OPA policy tests against the compose stack
-  compose-use-one    Use basic RBAC policies (remounts policies/opa/rbac into OPA)
-  compose-use-three  Use RBAC + ReBAC + Time-based policies (remounts policies/opa/rbac-rebac-time into OPA)
-
-Kubernetes targets:
-  k8s-deploy         Deploy ZTA PoC umbrella chart on a kind cluster (Istio + zta-poc)
-  k8s-clean          Tear down the ZTA PoC and Istio (helm uninstall + namespace cleanup)
-  k8s-redeploy       Uninstall + install (full reset) ZTA PoC and Istio on a kind cluster
-  k8s-test           Run service + OPA policy tests against the k8s deployment
-  k8s-forward        Port-forward all services
-  k8s-forward-bg     Same, but background — writes PID to /tmp/zta-pf.pid
-  k8s-forward-stop   Kill the background port-forwards
-  k8s-use-one        Use basic RBAC policies
-  k8s-use-three      Use RBAC + ReBAC + Time-based policies
-
-Development:
-  lint               Run pre-commit hooks on specific files
+  help                   Show available targets
+  open-keycloak          Open Keycloak in browser
+  list-policies          List policies currently loaded in OPA
+  test-opa               Test OPA policies directly
+  lint                   Run pre-commit hooks
+  start                  Start the platform
+  stop                   Stop the platform
+  restart                Restart the platform
+  logs                   Follow platform logs
+  rebuild                Rebuild service docker images
+  forward                Port-forward dashboards (k8s only)
+  wait-healthy           Block until Keycloak + OPA + at least one service respond (max 120s)
+  test                   Run service + OPA policy tests
+  use-one                Switch OPA to basic RBAC policies
+  use-three              Switch OPA to RBAC + ReBAC + Time-based policies
+  forward-bg             Background port-forward (k8s only; writes PID to /tmp/zta-pf.pid)
+  forward-stop           Stop background port-forwards
 ```
 
 ## Documentation

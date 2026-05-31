@@ -5,29 +5,29 @@
 ### Docker Compose
 ```bash
 # 1. Start services
-make compose-start
+make start
 
 # 2. Load policies
-make compose-use-three
+make use-three
 
 # 3. Run automated tests
-make compose-test
+make test
 ```
 
 ### Kubernetes (Kind)
 ```bash
 # 1. Deploy infrastructure and services
-make k8s-deploy
+make start
 
 # 2. Port-forward (in separate terminal)
-make k8s-forward
+make forward
 
 # 3. Load policies
-make k8s-use-one      # RBAC only
-make k8s-use-three    # RBAC + ReBAC + Time-based
+make use-one      # RBAC only
+make use-three    # RBAC + ReBAC + Time-based
 
 # 4. Run automated tests (auto-detects K8s and loaded policies)
-make k8s-test
+make test
 ```
 
 ## Essential Troubleshooting Commands
@@ -248,7 +248,7 @@ kubectl get svc
 pkill -f "port-forward"
 
 # Restart port-forward
-make k8s-forward
+make forward
 
 # Manual port-forward with verbose
 kubectl port-forward -v=9 -n istio-ingress svc/istio-ingressgateway 8080:80
@@ -264,21 +264,19 @@ kubectl get events --sort-by='.lastTimestamp'
 docker exec kind-control-plane crictl images | grep zta-poc
 
 # Redeploy
-make k8s-clean
-make k8s-deploy
+make restart
 ```
 
 ## Reset Everything
 
 **Docker Compose:**
 ```bash
-make compose-clean
-make compose-start
-make compose-use-three
+make restart
+make use-three
 ```
 
 **Kubernetes:**
 ```bash
-make k8s-clean
-make k8s-deploy
+make restart
+make use-three
 ```

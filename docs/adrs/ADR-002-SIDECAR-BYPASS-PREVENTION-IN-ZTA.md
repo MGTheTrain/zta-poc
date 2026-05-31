@@ -56,7 +56,7 @@ The defense-in-depth decision is recorded; the supporting manifests are
 not yet shipped by the umbrella chart in this PoC. Concretely:
 
 - **AuthorizationPolicy CUSTOM + RequestAuthentication**: implemented,
-  exercised by `make k8s-test`.
+  exercised by `export RUNTIME=k8s && make test`.
 - **STRICT PeerAuthentication**: not shipped. Istio's mesh-wide
   PERMISSIVE default applies, which means mTLS happens between injected
   sidecars but unencrypted traffic is also accepted. Tracked in

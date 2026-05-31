@@ -2,7 +2,7 @@
 set -e
 
 POLICY_SET=${1:-rbac}
-ENVIRONMENT=${2:-docker} # docker or k8s
+ENVIRONMENT=${2:-compose} # compose or k8s
 OPA_URL="http://localhost:8181"
 
 echo "🔄 Loading OPA policies: $POLICY_SET ($ENVIRONMENT)"
@@ -51,7 +51,7 @@ rbac-rebac-time | use-three)
 
 *)
     echo "❌ Unknown policy set: $POLICY_SET"
-    echo "Usage: $0 [rbac|rbac-rebac-time] [docker|k8s]"
+    echo "Usage: $0 [rbac|rbac-rebac-time] [compose|k8s]"
     exit 1
     ;;
 esac

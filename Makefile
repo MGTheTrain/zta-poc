@@ -1,13 +1,4 @@
 # ZTA PoC — developer commands
-#
-# PROJECT_ROOT anchors bind-mount paths in infra/compose/docker-compose.yml.
-# It defaults to the repo root so running `make` outside a devcontainer
-# Just Works; inside a devcontainer it's wired via remoteEnv in
-# .devcontainer/devcontainer.json.
-#
-# OPA_POLICY_SET selects which folder under policies/opa/ gets mounted
-# into the OPA container (rbac | rbac-rebac-time | advanced). The
-# compose-use-* and k8s-use-* targets toggle it for you.
 
 SHELL       := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
@@ -15,43 +6,109 @@ SHELL       := /usr/bin/env bash
 export PROJECT_ROOT   ?= $(CURDIR)
 export OPA_POLICY_SET ?= rbac-rebac-time
 
-COMPOSE_FILE ?= infra/compose/docker-compose.yml
-COMPOSE      := docker compose -f $(COMPOSE_FILE)
+RUNTIME ?= compose
+
+COMPOSE_FILE   ?= infra/compose/docker-compose.yml
+COMPOSE        := docker compose -f $(COMPOSE_FILE)
+UMBRELLA_CHART := ./infra/helm-charts/zta-poc
 
 PYTEST ?= pytest
 
-help: ## Show this help
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo "  PROJECT_ROOT   = $(PROJECT_ROOT)"
-	@echo "  OPA_POLICY_SET = $(OPA_POLICY_SET)"
-	@echo ''
-	@echo 'Common targets (work for both):'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## \[Common\]/ {printf "  \033[35m%-18s\033[0m %s\n", $$1, substr($$2, 10)}' $(MAKEFILE_LIST)
-	@echo ''
-	@echo 'Docker Compose targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## \[Compose\]/ {printf "  \033[36m%-18s\033[0m %s\n", $$1, substr($$2, 11)}' $(MAKEFILE_LIST)
-	@echo ''
-	@echo 'Kubernetes targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^k8s-[a-zA-Z_-]+:.*?## \[K8s\]/ {printf "  \033[33m%-18s\033[0m %s\n", $$1, substr($$2, 7)}' $(MAKEFILE_LIST)
-	@echo ''
-	@echo 'Development:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## \[Development\]/ {printf "  \033[32m%-18s\033[0m %s\n", $$1, substr($$2, 15)}' $(MAKEFILE_LIST)
+# ── Runtime abstraction ─────────────────────────────────────────────
 
-# Common Targets (Both Docker Compose and Kubernetes)
+ifeq ($(RUNTIME),compose)
+else ifeq ($(RUNTIME),k8s)
+else
+$(error Unsupported RUNTIME='$(RUNTIME)' (expected compose|k8s))
+endif
 
-list-policies: ## [Common] List current policies
-	@echo " Policies loaded in OPA:"
+# ── Help ────────────────────────────────────────────────────────────
+
+.PHONY: help
+help: ## Show available targets
+	@echo ''
+	@echo 'Zero Trust Architecture PoC'
+	@echo ''
+	@echo '  PROJECT_ROOT   = $(PROJECT_ROOT)'
+	@echo '  OPA_POLICY_SET = $(OPA_POLICY_SET)'
+	@echo '  RUNTIME        = $(RUNTIME)'
+	@echo ''
+	@echo 'Usage:'
+	@echo '  make <target> [RUNTIME=compose|k8s]'
+	@echo ''
+	@awk 'BEGIN {FS = ":.*?## "}; /^[a-zA-Z0-9_-]+:.*?## / {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+# ── Common ──────────────────────────────────────────────────────────
+
+.PHONY: open-keycloak list-policies test-opa lint
+open-keycloak: ## Open Keycloak in browser
+	@open http://localhost:8180 2>/dev/null || \
+	 xdg-open http://localhost:8180 2>/dev/null || \
+	 echo "Open http://localhost:8180"
+
+list-policies: ## List policies currently loaded in OPA
 	@curl -s http://localhost:8181/v1/policies | jq -r '.result[].id // "No policies"'
 
-open-keycloak: ## [Common] Open Keycloak in browser
-	@echo " Opening Keycloak..."
-	@open http://localhost:8180 2>/dev/null || xdg-open http://localhost:8180 2>/dev/null || echo "Open http://localhost:8180"
+test-opa: ## Test OPA policies directly
+	@bash scripts/test-opa-policy.sh
 
-test-opa: ## [Common] Test OPA policies directly
-	$(PYTEST) tests/test_opa_policies.py
+lint: ## Run pre-commit hooks
+	@pre-commit run --all-files
 
-wait-healthy: ## [Common] Block until Keycloak + OPA + at least one service answer (max 120s)
+# ── Runtime lifecycle ───────────────────────────────────────────────
+
+.PHONY: start stop restart logs clean rebuild forward wait-healthy test
+start: ## Start the platform
+ifeq ($(RUNTIME),compose)
+	@echo " Starting Zero Trust Architecture PoC..."
+	@echo "   PROJECT_ROOT=$(PROJECT_ROOT)"
+	@echo "   OPA_POLICY_SET=$(OPA_POLICY_SET)"
+	@$(COMPOSE) up -d
+	@echo " Waiting for services to be healthy..."
+	@$(MAKE) -s wait-healthy
+	@echo ""
+	@echo " Access Points:"
+	@echo "  Keycloak:       http://localhost:8180 (admin/admin)"
+	@echo "  Go Service:     http://localhost:9001"
+	@echo "  Python Service: http://localhost:9002"
+	@echo "  C# Service:     http://localhost:9003"
+	@echo "  OPA:            http://localhost:8181"
+else
+	@bash scripts/deploy-to-kind.sh
+endif
+
+stop: ## Stop the platform
+ifeq ($(RUNTIME),compose)
+	@$(COMPOSE) down
+else
+	@bash scripts/cleanup-kind.sh
+endif
+
+restart: stop start ## Restart the platform
+
+logs: ## Follow platform logs
+ifeq ($(RUNTIME),compose)
+	@$(COMPOSE) logs -f
+else
+	@echo "Use kubectl logs for specific pods:"
+	@kubectl get pods -n default
+endif
+
+rebuild: ## Rebuild service docker images
+ifeq ($(RUNTIME),compose)
+	@$(COMPOSE) build
+else
+	@echo "Rebuild not applicable for k8s — handled by deploy-to-kind.sh"
+endif
+
+forward: ## Port-forward dashboards (k8s only)
+ifeq ($(RUNTIME),k8s)
+	@bash scripts/port-forward-in-kind.sh --all
+else
+	@echo "Docker runtime exposes services on host ports directly"
+endif
+
+wait-healthy: ## Block until Keycloak + OPA + at least one service respond (max 120s)
 	@echo " Waiting for stack to be healthy..."
 	@for i in $$(seq 1 60); do \
 	  kc=$$(curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8180/realms/demo 2>/dev/null || echo 000); \
@@ -64,85 +121,35 @@ wait-healthy: ## [Common] Block until Keycloak + OPA + at least one service answ
 	done; \
 	echo " ✗ stack did not become healthy in 120s"; exit 1
 
-# Docker Compose Targets
+test: ## Run service + OPA policy tests
+	$(PYTEST) tests/ --env=$(RUNTIME)
 
-compose-build: ## [Compose] Rebuild all services (only the three backend services build locally; Envoy/Keycloak/OPA use upstream images)
-	@echo " Rebuilding all services..."
-	@$(COMPOSE) build
-	@echo " Build complete"
+# ── Policy switching ────────────────────────────────────────────────
 
-compose-start: ## [Compose] Start all services
-	@echo " Starting Zero Trust Architecture PoC..."
-	@echo "   PROJECT_ROOT=$(PROJECT_ROOT)"
-	@echo "   OPA_POLICY_SET=$(OPA_POLICY_SET)"
-	@$(COMPOSE) up -d
-	@echo " Waiting for services to be healthy..."
-	@sleep 10
-	@echo " Services started"
-	@echo ""
-	@echo " Access Points:"
-	@echo "  Keycloak:       http://localhost:8180 (admin/admin)"
-	@echo "  Go Service:     http://localhost:9001"
-	@echo "  Python Service: http://localhost:9002"
-	@echo "  C# Service:     http://localhost:9003"
-	@echo "  OPA:            http://localhost:8181"
-	@echo ""
+.PHONY: use-one use-three
+use-one: ## Switch OPA to basic RBAC policies
+	@echo " Switching OPA to policies/opa/rbac..."
+	@bash scripts/load-opa-policies.sh rbac $(RUNTIME)
+	@echo " OPA now serving 'rbac'"
 
-compose-stop: ## [Compose] Stop all services
-	@$(COMPOSE) down
+use-three: ## Switch OPA to RBAC + ReBAC + Time-based policies
+	@echo " Switching OPA to policies/opa/rbac-rebac-time..."
+	@bash scripts/load-opa-policies.sh rbac-rebac-time $(RUNTIME)
+	@echo " OPA now serving 'rbac-rebac-time'"
 
-compose-restart: compose-stop compose-start ## [Compose] Restart all services
+# ── K8s extras (no docker equivalent) ───────────────────────────────
 
-compose-logs: ## [Compose] Show logs
-	@$(COMPOSE) logs -f
-
-compose-clean: ## [Compose] Stop and remove everything
-	@$(COMPOSE) down -v
-	@docker system prune -f
-
-compose-test: ## [Compose] Run service + OPA policy tests against the compose stack
-	$(PYTEST) tests/ --env=docker
-
-compose-use-one: ## [Compose] Use basic RBAC policies (remounts policies/opa/rbac into OPA)
-	@bash scripts/load-opa-policies.sh rbac docker
-
-compose-use-three: ## [Compose] Use RBAC + ReBAC + Time-based policies (remounts policies/opa/rbac-rebac-time into OPA)
-	@bash scripts/load-opa-policies.sh rbac-rebac-time docker
-
-# Kubernetes Targets
-
-k8s-deploy: ## [K8s] Deploy ZTA PoC umbrella chart on a kind cluster (Istio + zta-poc)
-	@bash scripts/deploy-to-kind.sh
-
-k8s-clean: ## [K8s] Tear down the ZTA PoC and Istio (helm uninstall + namespace cleanup)
-	@bash scripts/cleanup-kind.sh
-
-k8s-redeploy: ## [K8s] Uninstall + install (full reset) ZTA PoC and Istio on a kind cluster
-	@bash scripts/cleanup-kind.sh
-	@bash scripts/deploy-to-kind.sh
-
-k8s-test: ## [K8s] Run service + OPA policy tests against the k8s deployment
-	@echo " Note: this assumes 'make k8s-forward' is running in another terminal"
-	$(PYTEST) tests/ --env=k8s
-
-k8s-forward: ## [K8s] Port-forward all services
-	@bash scripts/port-forward-in-kind.sh --all
-
-k8s-forward-bg: ## [K8s] Same, but background — writes PID to /tmp/zta-pf.pid
+.PHONY: forward-bg forward-stop redeploy
+forward-bg: ## Background port-forward (k8s only; writes PID to /tmp/zta-pf.pid)
+ifeq ($(RUNTIME),k8s)
 	@bash scripts/port-forward-in-kind.sh --all > /tmp/zta-pf.log 2>&1 & echo $$! > /tmp/zta-pf.pid
-	@echo " Port-forwards started in background (PID $$(cat /tmp/zta-pf.pid))"
+else
+	@echo "forward-bg is k8s-only"
+endif
 
-k8s-forward-stop: ## [K8s] Kill the background port-forwards
+forward-stop: ## Stop background port-forwards
+ifeq ($(RUNTIME),k8s)
 	@if [ -f /tmp/zta-pf.pid ]; then kill $$(cat /tmp/zta-pf.pid) 2>/dev/null || true; rm -f /tmp/zta-pf.pid; fi
-
-k8s-use-one: ## [K8s] Use basic RBAC policies
-	@bash scripts/load-opa-policies.sh rbac k8s
-
-k8s-use-three: ## [K8s] Use RBAC + ReBAC + Time-based policies
-	@bash scripts/load-opa-policies.sh rbac-rebac-time k8s
-
-## Development
-
-.PHONY: lint
-lint: ## [Development] Run pre-commit hooks on specific files
-	pre-commit run --all-files
+else
+	@echo "forward-stop is k8s-only"
+endif

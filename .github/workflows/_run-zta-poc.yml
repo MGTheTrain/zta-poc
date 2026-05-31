@@ -22,6 +22,7 @@ jobs:
     env:
       PROJECT_ROOT: ${{ github.workspace }}
       COMPOSE_FILE: infra/compose/docker-compose.ci.yml
+      RUNTIME: ${{ inputs.runtime }}
     steps:
       - uses: actions/checkout@v6
 
@@ -35,7 +36,7 @@ jobs:
       # ── Compose path ──────────────────────────────────────────────
       - name: Start stack (compose)
         if: inputs.runtime == 'compose'
-        run: make compose-start
+        run: make start
 
       - name: Wait for stack
         if: inputs.runtime == 'compose'
@@ -43,19 +44,19 @@ jobs:
 
       - name: Load RBAC policy (compose)
         if: inputs.runtime == 'compose'
-        run: make compose-use-one
+        run: make use-one
 
       - name: Run tests (compose)
         if: inputs.runtime == 'compose'
-        run: make compose-test
+        run: make test
 
       - name: Load RBAC + ReBAC + Time policies (compose)
         if: inputs.runtime == 'compose'
-        run: make compose-use-three
+        run: make use-three
 
       - name: Run tests (compose)
         if: inputs.runtime == 'compose'
-        run: make compose-test
+        run: make test
 
       # ── k8s path ──────────────────────────────────────────────────
       - name: Set up kind cluster
@@ -70,11 +71,11 @@ jobs:
 
       - name: Deploy to kind
         if: inputs.runtime == 'k8s'
-        run: make k8s-deploy
+        run: make start
 
       - name: Start port-forwards
         if: inputs.runtime == 'k8s'
-        run: make k8s-forward-bg
+        run: make forward-bg
 
       - name: Wait for stack
         if: inputs.runtime == 'k8s'
@@ -82,19 +83,19 @@ jobs:
 
       - name: Load RBAC policy (k8s)
         if: inputs.runtime == 'k8s'
-        run: make k8s-use-one
+        run: make use-one
 
       - name: Run tests (k8s)
         if: inputs.runtime == 'k8s'
-        run: make k8s-test
+        run: make test
 
       - name: Load RBAC + ReBAC + Time policies (k8s)
         if: inputs.runtime == 'k8s'
-        run: make k8s-use-three
+        run: make use-three
 
       - name: Run tests (k8s)
         if: inputs.runtime == 'k8s'
-        run: make k8s-test
+        run: make test
 
       # ── Diagnostics ───────────────────────────────────────────────
       - name: Dump logs on failure (compose)
@@ -122,10 +123,10 @@ jobs:
       # ── Tear down ─────────────────────────────────────────────────
       - name: Tear down (compose)
         if: always() && inputs.runtime == 'compose'
-        run: make compose-clean
+        run: make stop
 
       - name: Tear down (k8s)
         if: always() && inputs.runtime == 'k8s'
         run: |
-          make k8s-forward-stop
-          make k8s-clean
+          make forward-stop
+          make stop

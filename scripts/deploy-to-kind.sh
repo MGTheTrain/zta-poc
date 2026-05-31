@@ -97,7 +97,7 @@ helm list -n istio-ingress 2>/dev/null | tail -n +2 || true
 helm list -n default 2>/dev/null | tail -n +2 || true
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"
-echo "  1. Port-forward:         make k8s-forward"
-echo "  2. Switch policy set:    make k8s-use-one  (or k8s-use-three)"
-echo "  3. Run tests:            make k8s-test"
+echo "  1. Port-forward:         make forward"
+echo "  2. Switch policy set:    make use-one  (or use-three)"
+echo "  3. Run tests:            make test"
 echo ""

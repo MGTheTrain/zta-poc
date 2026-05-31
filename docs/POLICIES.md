@@ -1,8 +1,8 @@
 # Policy Sets
 
 Two policy sets ship with the PoC, plus an `advanced` set with extra
-illustrative examples. Switch between them with `make compose-use-one`
-/ `make compose-use-three` (or the `k8s-use-*` equivalents).
+illustrative examples. Switch between them with `make use-one`
+/ `make use-three` (or the `use-*` equivalents).
 
 ## `use-one` — RBAC only
 
@@ -30,7 +30,7 @@ Source: [`policies/opa/rbac-rebac-time/`](../policies/opa/rbac-rebac-time/) ·
 
 ## `advanced` — illustrative ABAC
 
-Compose-only. IP allowlists, MFA, geofencing, rate limits. Not all rules
+only. IP allowlists, MFA, geofencing, rate limits. Not all rules
 are runnable without additional setup (Keycloak claim mappers, external
 data sources). See [ABAC-EXAMPLES.md](ABAC-EXAMPLES.md) for the runnable
 variants.
@@ -67,5 +67,5 @@ loaded in OPA.
 The pytest suite auto-detects which set is currently loaded
 ([`tests/helpers.py::detect_policy_set`](../tests/helpers.py)) and skips
 tests that require a set other than the active one. So running
-`make compose-test` after `compose-use-one` runs only RBAC tests; after
-`compose-use-three` it also runs the ReBAC tests.
+`make test` after `use-one` runs only RBAC tests; after
+`use-three` it also runs the ReBAC tests.

@@ -1,7 +1,7 @@
 """
 Pytest configuration shared by all test modules.
 
-Adds a --env command-line option (docker | k8s) and exposes session-scoped
+Adds a --env command-line option (compose | k8s) and exposes session-scoped
 fixtures for endpoints, tokens, user IDs, and the detected policy set.
 """
 
@@ -27,9 +27,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--env",
         action="store",
-        default="docker",
-        choices=["docker", "k8s"],
-        help="Target environment: docker (compose, default) or k8s (kind).",
+        default="compose",
+        choices=["compose", "k8s"],
+        help="Target environment: docker compose (compose, default) or k8s (kind).",
     )
 
 
@@ -87,8 +87,8 @@ def policy_set(endpoints: Endpoints) -> PolicySet:
     detected = detect_policy_set(endpoints.opa)
     if detected == "none":
         pytest.exit(
-            "No OPA policies loaded — run `make compose-use-one` or "
-            "`make k8s-use-one` first.",
+            "No OPA policies loaded — run `RUNTIME=compose && make use-one` or "
+            "`RUNTIME=k8s && make use-one` first.",
             returncode=2,
         )
     return detected
