@@ -4,6 +4,10 @@ Zero Trust implementation demonstrating JWT authentication, policy-based
 authorization and service mesh integration across Go, Python and C#
 services using Istio, OPA and Keycloak.
 
+## Backlog
+
+Tracked future improvements and planned work items are maintained in [BACKLOG.md](./BACKLOG.md).
+
 ## Quick Start
 
 ### Docker Compose
