@@ -33,32 +33,7 @@ jobs:
       - name: Install pytest deps
         run: pip install pytest requests
 
-      # ── Compose path ──────────────────────────────────────────────
-      - name: Start stack (compose)
-        if: inputs.runtime == 'compose'
-        run: make start
-
-      - name: Wait for stack
-        if: inputs.runtime == 'compose'
-        run: make wait-healthy
-
-      - name: Load RBAC policy (compose)
-        if: inputs.runtime == 'compose'
-        run: make use-one
-
-      - name: Run tests (compose)
-        if: inputs.runtime == 'compose'
-        run: make test
-
-      - name: Load RBAC + ReBAC + Time policies (compose)
-        if: inputs.runtime == 'compose'
-        run: make use-three
-
-      - name: Run tests (compose)
-        if: inputs.runtime == 'compose'
-        run: make test
-
-      # ── k8s path ──────────────────────────────────────────────────
+      # ── k8s-only prerequisites ────────────────────────────────────
       - name: Set up kind cluster
         if: inputs.runtime == 'k8s'
         uses: helm/kind-action@v1
@@ -69,64 +44,54 @@ jobs:
         if: inputs.runtime == 'k8s'
         uses: azure/setup-helm@v4
 
-      - name: Deploy to kind
-        if: inputs.runtime == 'k8s'
+      # ── Runtime-agnostic lifecycle ────────────────────────────────
+      - name: Start stack
         run: make start
 
-      - name: Start port-forwards
+      - name: Start port-forwards (k8s only)
         if: inputs.runtime == 'k8s'
         run: make forward-bg
 
       - name: Wait for stack
-        if: inputs.runtime == 'k8s'
         run: make wait-healthy
 
-      - name: Load RBAC policy (k8s)
-        if: inputs.runtime == 'k8s'
-        run: make use-one
+      - name: Use RBAC and test
+        run: |
+          make use-one
+          make test
 
-      - name: Run tests (k8s)
-        if: inputs.runtime == 'k8s'
-        run: make test
-
-      - name: Load RBAC + ReBAC + Time policies (k8s)
-        if: inputs.runtime == 'k8s'
-        run: make use-three
-
-      - name: Run tests (k8s)
-        if: inputs.runtime == 'k8s'
-        run: make test
+      - name: Use RBAC + ReBAC + Time and test
+        run: |
+          make use-three
+          make test
 
       # ── Diagnostics ───────────────────────────────────────────────
-      - name: Dump logs on failure (compose)
-        if: failure() && inputs.runtime == 'compose'
+      - name: Dump logs on failure
+        if: failure()
         run: |
-          for svc in keycloak opa go-service python-service csharp-service \
-                     go-service-envoy python-service-envoy csharp-service-envoy; do
-            echo "=== $svc ===" && docker compose -f infra/compose/docker-compose.yml \
-              logs --tail=200 $svc 2>/dev/null || true
-          done
-
-      - name: Dump logs on failure (k8s)
-        if: failure() && inputs.runtime == 'k8s'
-        run: |
-          echo "=== Pods ==="
-          kubectl get pods -A -o wide
-          echo "=== Events ==="
-          kubectl get events -A --sort-by=.lastTimestamp | tail -50
-          for deploy in opa keycloak go-service python-service csharp-service; do
-            echo "=== $deploy ==="
-            kubectl -n default logs deploy/$deploy --tail=200 2>/dev/null || true
-            kubectl -n default logs deploy/$deploy -c istio-proxy --tail=100 2>/dev/null || true
-          done
+          if [ "${RUNTIME}" = "compose" ]; then
+            for svc in keycloak opa go-service python-service csharp-service \
+                       go-service-envoy python-service-envoy csharp-service-envoy; do
+              echo "=== $svc ==="
+              docker compose -f "${COMPOSE_FILE}" logs --tail=200 "$svc" 2>/dev/null || true
+            done
+          else
+            echo "=== Pods ==="
+            kubectl get pods -A -o wide
+            echo "=== Events ==="
+            kubectl get events -A --sort-by=.lastTimestamp | tail -50
+            for deploy in opa keycloak go-service python-service csharp-service; do
+              echo "=== $deploy ==="
+              kubectl -n default logs "deploy/$deploy" --tail=200 2>/dev/null || true
+              kubectl -n default logs "deploy/$deploy" -c istio-proxy --tail=100 2>/dev/null || true
+            done
+          fi
 
       # ── Tear down ─────────────────────────────────────────────────
-      - name: Tear down (compose)
-        if: always() && inputs.runtime == 'compose'
-        run: make stop
-
-      - name: Tear down (k8s)
+      - name: Stop port-forwards (k8s only)
         if: always() && inputs.runtime == 'k8s'
-        run: |
-          make forward-stop
-          make stop
+        run: make forward-stop
+
+      - name: Stop stack
+        if: always()
+        run: make stop
