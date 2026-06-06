@@ -50,6 +50,11 @@ zta-platform:
       password: admin
     realmName: demo
 
+    # volumes / volumeMounts are owned by the zta-platform chart (it owns the
+    # realm ConfigMap). They can be overridden here if ever needed, e.g. to
+    # mount an extra secret, but note Helm REPLACES list values, so any
+    # override must restate the realm-config entry too.
+
 # ---------------------------------------------------------------------------
 # Demo services. Each block is passed verbatim to the subchart of the
 # same alias, so the keys are the leaf chart's own values keys.

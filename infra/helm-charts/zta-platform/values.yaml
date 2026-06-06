@@ -1,5 +1,13 @@
-# zta-platform — defaults. Umbrella overrides via the "zta-platform" key
-# in its own values.yaml.
+# zta-platform — defaults. The zta-poc umbrella overrides via the
+# "zta-platform" key in its own values.yaml.
+#
+# keycloak and opa are now subcharts (charts/keycloak, charts/opa). Values
+# under those keys are passed straight through to the subchart.
+#
+# The Keycloak realm-import volume is owned HERE (the realm ConfigMap lives
+# in this chart's templates/), and injected into the keycloak subchart via
+# keycloak.volumes / keycloak.volumeMounts. The subchart defaults these to
+# empty and can be overridden by any consumer.
 
 opa:
   enabled: true
@@ -18,6 +26,10 @@ opa:
     limits:
       cpu: 500m
       memory: 256Mi
+  # No volume mount — the previous /policies mount was unused and has been
+  # removed. Left here (empty) only so a consumer could add one if needed.
+  volumes: []
+  volumeMounts: []
 
 keycloak:
   enabled: true
@@ -36,3 +48,13 @@ keycloak:
     limits:
       cpu: 1000m
       memory: 1Gi
+  # Realm-import volume owned by the parent. The ConfigMap below is rendered
+  # by this chart's templates/keycloak-realm-configmap.yaml.
+  volumes:
+    - name: realm-config
+      configMap:
+        name: keycloak-realm-config
+  volumeMounts:
+    - name: realm-config
+      mountPath: /opt/keycloak/data/import
+      readOnly: true

@@ -1,0 +1,26 @@
+enabled: true
+
+# rbac | rbac-rebac-time | advanced  (used by parent to select the policy set)
+policySet: rbac-rebac-time
+
+image:
+  repository: openpolicyagent/opa
+  tag: 1.16.2-envoy-static
+  pullPolicy: IfNotPresent
+
+httpPort: 8181
+grpcPort: 9191
+diagnosticPort: 8282
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Kept overridable for parity with keycloak, but unused by default — OPA loads
+# its policy bundle without a mounted ConfigMap in this PoC. Default empty.
+volumes: []
+volumeMounts: []

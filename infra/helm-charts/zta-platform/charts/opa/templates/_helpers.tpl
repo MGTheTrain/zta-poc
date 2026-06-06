@@ -1,10 +1,8 @@
 {{/*
-Common labels for all zta-platform resources rendered directly by this
-(parent) chart — currently the Keycloak realm ConfigMap. Subcharts define
-their own label helpers.
+Common labels for opa resources.
 */}}
-{{- define "zta-platform.labels" -}}
-app.kubernetes.io/name: zta-platform
+{{- define "opa.labels" -}}
+app.kubernetes.io/name: opa
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}

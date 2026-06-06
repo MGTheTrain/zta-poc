@@ -1,19 +1,19 @@
-{{- if .Values.opa.enabled }}
+{{- if .Values.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
   name: opa
   labels:
-    {{- include "zta-platform.labels" . | nindent 4 }}
+    {{- include "opa.labels" . | nindent 4 }}
     app: opa
 spec:
   selector:
     app: opa
   ports:
     - name: http
-      port: {{ .Values.opa.httpPort }}
+      port: {{ .Values.httpPort }}
       targetPort: http
     - name: grpc
-      port: {{ .Values.opa.grpcPort }}
+      port: {{ .Values.grpcPort }}
       targetPort: grpc
 {{- end }}

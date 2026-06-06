@@ -1,0 +1,30 @@
+enabled: true
+
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: "23.0.4"
+  pullPolicy: IfNotPresent
+
+admin:
+  user: admin
+  password: admin
+
+realmName: demo
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# Pod-level volumes and container volumeMounts. Default empty so the subchart
+# is self-contained; the parent (zta-platform) injects the realm-import
+# ConfigMap volume + mount here. A consumer can override or extend these.
+volumes: []
+volumeMounts: []
+
+# Roll the pod when the realm content changes. The parent sets this to the
+# realm ConfigMap checksum; empty by default.
+realmChecksum: ""

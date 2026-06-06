@@ -1,0 +1,7 @@
+apiVersion: v2
+name: opa
+description: Open Policy Agent (Envoy ext_authz) for the ZTA PoC. Policies are
+  loaded by the parent zta-platform chart; this subchart carries the runtime only.
+type: application
+version: 0.1.0
+appVersion: "1.16.2"

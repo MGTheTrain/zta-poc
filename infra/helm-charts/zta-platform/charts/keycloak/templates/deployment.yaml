@@ -1,10 +1,10 @@
-{{- if .Values.keycloak.enabled }}
+{{- if .Values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: keycloak
   labels:
-    {{- include "zta-platform.labels" . | nindent 4 }}
+    {{- include "keycloak.labels" . | nindent 4 }}
     app: keycloak
 spec:
   replicas: 1
@@ -15,23 +15,25 @@ spec:
     metadata:
       labels:
         app: keycloak
-        {{- include "zta-platform.labels" . | nindent 8 }}
+        {{- include "keycloak.labels" . | nindent 8 }}
+      {{- if .Values.realmChecksum }}
       annotations:
-        # Roll the Pod if the realm JSON content changes.
-        checksum/realm: {{ include (print $.Template.BasePath "/keycloak-realm-configmap.yaml") . | sha256sum }}
+        # Roll the Pod if the realm JSON content changes (checksum supplied by parent).
+        checksum/realm: {{ .Values.realmChecksum }}
+      {{- end }}
     spec:
       containers:
         - name: keycloak
-          image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag }}"
-          imagePullPolicy: {{ .Values.keycloak.image.pullPolicy }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "start-dev"
             - "--import-realm"
           env:
             - name: KEYCLOAK_ADMIN
-              value: {{ .Values.keycloak.admin.user | quote }}
+              value: {{ .Values.admin.user | quote }}
             - name: KEYCLOAK_ADMIN_PASSWORD
-              value: {{ .Values.keycloak.admin.password | quote }}
+              value: {{ .Values.admin.password | quote }}
             - name: KC_HEALTH_ENABLED
               value: "true"
             - name: KC_METRICS_ENABLED
@@ -41,10 +43,10 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          {{- with .Values.volumeMounts }}
           volumeMounts:
-            - name: realm-config
-              mountPath: /opt/keycloak/data/import
-              readOnly: true
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /health/live
@@ -58,9 +60,9 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
           resources:
-            {{- toYaml .Values.keycloak.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.volumes }}
       volumes:
-        - name: realm-config
-          configMap:
-            name: keycloak-realm-config
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 {{- end }}

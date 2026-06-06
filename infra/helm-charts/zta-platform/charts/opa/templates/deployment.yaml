@@ -1,10 +1,10 @@
-{{- if .Values.opa.enabled }}
+{{- if .Values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: opa
   labels:
-    {{- include "zta-platform.labels" . | nindent 4 }}
+    {{- include "opa.labels" . | nindent 4 }}
     app: opa
 spec:
   replicas: 1
@@ -15,28 +15,32 @@ spec:
     metadata:
       labels:
         app: opa
-        {{- include "zta-platform.labels" . | nindent 8 }}
+        {{- include "opa.labels" . | nindent 8 }}
     spec:
       containers:
         - name: opa
-          image: "{{ .Values.opa.image.repository }}:{{ .Values.opa.image.tag }}"
-          imagePullPolicy: {{ .Values.opa.image.pullPolicy }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "run"
             - "--server"
             - "--v0-compatible"
-            - "--addr=0.0.0.0:{{ .Values.opa.httpPort }}"
-            - "--diagnostic-addr=0.0.0.0:{{ .Values.opa.diagnosticPort }}"
-            - "--set=plugins.envoy_ext_authz_grpc.addr=:{{ .Values.opa.grpcPort }}"
+            - "--addr=0.0.0.0:{{ .Values.httpPort }}"
+            - "--diagnostic-addr=0.0.0.0:{{ .Values.diagnosticPort }}"
+            - "--set=plugins.envoy_ext_authz_grpc.addr=:{{ .Values.grpcPort }}"
             - "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow"
             - "--set=decision_logs.console=true"
           ports:
             - name: http
-              containerPort: {{ .Values.opa.httpPort }}
+              containerPort: {{ .Values.httpPort }}
             - name: grpc
-              containerPort: {{ .Values.opa.grpcPort }}
+              containerPort: {{ .Values.grpcPort }}
             - name: diagnostic
-              containerPort: {{ .Values.opa.diagnosticPort }}
+              containerPort: {{ .Values.diagnosticPort }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /health
@@ -50,5 +54,9 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
-            {{- toYaml .Values.opa.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 {{- end }}

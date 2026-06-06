@@ -5,6 +5,11 @@ metadata:
   name: keycloak-realm-config
   labels:
     {{- include "zta-platform.labels" . | nindent 4 }}
+  annotations:
+    # Content hash of the realm files. Changes here change the ConfigMap,
+    # and the keycloak Deployment's checksum/realm annotation (set from this
+    # same glob in the umbrella) rolls the pod.
+    checksum/realm-files: {{ .Files.Glob "files/keycloak/*" | toString | sha256sum }}
 data:
   {{- range $path, $_ := .Files.Glob "files/keycloak/*" }}
   {{ base $path }}: |-

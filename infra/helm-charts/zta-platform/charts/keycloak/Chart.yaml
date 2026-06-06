@@ -1,0 +1,7 @@
+apiVersion: v2
+name: keycloak
+description: Keycloak identity provider for the ZTA PoC. Realm import volume is
+  supplied by the parent zta-platform chart via .Values.volumes / .Values.volumeMounts.
+type: application
+version: 0.1.0
+appVersion: "23.0.4"
