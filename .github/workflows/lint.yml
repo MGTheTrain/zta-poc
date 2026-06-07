@@ -14,5 +14,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - uses: open-policy-agent/setup-opa@v2
+        with:
+          version: "1.17.0"
       - run: pip install pre-commit
       - run: pre-commit run --all-files

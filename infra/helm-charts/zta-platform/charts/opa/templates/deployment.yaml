@@ -24,7 +24,6 @@ spec:
           args:
             - "run"
             - "--server"
-            - "--v0-compatible"
             - "--addr=0.0.0.0:{{ .Values.httpPort }}"
             - "--diagnostic-addr=0.0.0.0:{{ .Values.diagnosticPort }}"
             - "--set=plugins.envoy_ext_authz_grpc.addr=:{{ .Values.grpcPort }}"

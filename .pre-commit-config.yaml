@@ -40,3 +40,23 @@ repos:
       - id: shfmt
         files: ^scripts/.*\.sh$
         args: [-w, -s, -i, "4"]
+
+  - repo: local
+    hooks:
+      - id: opa-fmt
+        name: opa fmt
+        entry: opa fmt --v1-compatible -w
+        language: system
+        files: \.rego$
+      - id: opa-check
+        name: opa check (per policy set)
+        entry: bash -c 'for d in policies/opa/rbac policies/opa/rbac-rebac-time policies/opa/advanced policies/opa-k8s/rbac policies/opa-k8s/rbac-rebac-time; do opa check "$d" || exit 1; done'
+        language: system
+        files: \.rego$
+        pass_filenames: false
+      - id: opa-test
+        name: opa test
+        entry: bash -c 'for d in policies/opa/rbac policies/opa/rbac-rebac-time policies/opa/advanced policies/opa-k8s/rbac policies/opa-k8s/rbac-rebac-time; do opa test "$d" || exit 1; done'
+        language: system
+        files: \.rego$
+        pass_filenames: false

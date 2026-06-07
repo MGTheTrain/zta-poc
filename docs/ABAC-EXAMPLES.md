@@ -77,7 +77,7 @@ The simple "is now between 9 and 17 UTC" check, mirroring what
 actually ships:
 
 ```rego
-allowed {
+allowed if {
     now := time.now_ns()
     [hour, _, _] := time.clock([now, "UTC"])
     hour >= 9
@@ -92,7 +92,7 @@ A literal one-day window using parsed RFC3339 timestamps is occasionally
 useful (e.g. "freeze access on this specific date"):
 
 ```rego
-allow {
+allow if {
     time.now_ns() > time.parse_rfc3339_ns("2026-12-09T09:00:00Z")
     time.now_ns() < time.parse_rfc3339_ns("2026-12-09T17:00:00Z")
 }
@@ -101,7 +101,7 @@ allow {
 ### IP allowlist
 
 ```rego
-allow {
+allow if {
     client_ip := input.attributes.source.address.socketAddress.address
     net.cidr_contains("10.0.0.0/8", client_ip)
 }
@@ -118,7 +118,7 @@ The pattern that's actually in use; matches the path parts to the JWT
 `sub` claim:
 
 ```rego
-allow {
+allow if {
     jwt_payload.realm_access.roles[_] == "user"
     http_request.method == "GET"
     path_parts := split(http_request.path, "/")
@@ -134,12 +134,12 @@ Custom claims require a Keycloak user mapper or protocol mapper to land
 in the JWT. Once they do:
 
 ```rego
-allow {
+allow if {
     jwt_payload.realm_access.roles[_] == "user"
     jwt_payload.department == "engineering"
 }
 
-allow {
+allow if {
     jwt_payload.clearance_level >= 3
     startswith(http_request.path, "/classified")
 }
@@ -152,7 +152,7 @@ the user authenticated. Keycloak emits `"1"` for password-only,
 `"2"` once an OTP/WebAuthn factor was used.
 
 ```rego
-allow {
+allow if {
     jwt_payload.realm_access.roles[_] == "admin"
     startswith(http_request.path, "/admin/config")
     jwt_payload.acr == "2"
@@ -173,7 +173,7 @@ or Envoy's own ratelimit filter feeding stats back into OPA via the
 bundle API):
 
 ```rego
-allow {
+allow if {
     jwt_payload.realm_access.roles[_] == "user"
     count([r |
         r := data.request_log[_]
@@ -191,7 +191,7 @@ backed by a Redis-based service — OPA is the wrong layer.
 If `http.send` is enabled in your OPA capabilities:
 
 ```rego
-allow {
+allow if {
     response := http.send({
         "method": "GET",
         "url": "http://user-service/api/users/location",

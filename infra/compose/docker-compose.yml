@@ -50,7 +50,7 @@ services:
     command:
       - "run"
       - "--server"
-      - "--v0-compatible"
+      - "--addr=0.0.0.0:8181"
       - "--log-level=debug"
       - "--set=plugins.envoy_ext_authz_grpc.addr=:9191"
       - "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow"

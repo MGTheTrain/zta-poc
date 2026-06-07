@@ -1,17 +1,17 @@
-# Roadmap
+# Backlog
 
 Things deliberately deferred. Each item has a "trigger" — the condition
 that would make it worth doing now rather than later.
 
 ## Short-term
 
-### Drop the `--v0-compatible` flag from OPA
-**Status**: deferred
+### [x] Drop the `--v0-compatible` flag from OPA
+**Status**: done
 **Trigger**: when next touching policies for unrelated reasons, or when
 upgrading past OPA v1.x where the flag is removed.
 
 We currently launch OPA with `--v0-compatible` so the existing Rego v0
-syntax (`allow { ... }` without the `if` keyword) keeps parsing under
+syntax (`allow if { ... }` without the `if` keyword) keeps parsing under
 OPA v1.x. Migrating the policies to v1 syntax (`allow if { ... }`,
 explicit `contains` for partial set rules) lets us drop the flag.
 Mechanical change but easy to break — wait until there's a real reason
@@ -23,7 +23,7 @@ Affected files:
 - `infra/helm-charts/zta-platform/templates/opa-deployment.yaml` (args)
 - Every `.rego` file under `policies/`
 
-### Ship the manifests claimed by ADR-002
+### [ ] Ship the manifests claimed by ADR-002
 **Status**: deferred
 **Trigger**: when the PoC is presented as a security demo rather than a
 pattern reference.
@@ -39,7 +39,7 @@ umbrella chart doesn't currently ship any of those. Add:
 
 ## Medium-term
 
-### Unify the compose and k8s policy trees
+### [ ] Unify the compose and k8s policy trees
 **Status**: deferred
 **Trigger**: when adding a new transport (Linkerd, Cilium) or a third
 policy variant — duplication will start hurting then.
@@ -57,11 +57,9 @@ policies/
     └── k8s/          # thin facade returning bool
 ```
 
-See the in-repo discussion for the full sketch.
-
 ## Long-term
 
-### Evaluate Istio Ambient Mesh vs. classic sidecars
+### [ ] Evaluate Istio Ambient Mesh vs. classic sidecars
 
 **Status**: deferred
 **Trigger**: when reconsidering mesh selection (resource pressure,
