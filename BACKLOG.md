@@ -17,12 +17,6 @@ explicit `contains` for partial set rules) lets us drop the flag.
 Mechanical change but easy to break — wait until there's a real reason
 to be in the rego files.
 
-Affected files:
-- `infra/compose/docker-compose.yml` (OPA `command:` block)
-- `infra/helm-charts/zta-platform/values.yaml` (OPA args)
-- `infra/helm-charts/zta-platform/templates/opa-deployment.yaml` (args)
-- Every `.rego` file under `policies/`
-
 ### [ ] Ship the manifests claimed by ADR-002
 **Status**: deferred
 **Trigger**: when the PoC is presented as a security demo rather than a
